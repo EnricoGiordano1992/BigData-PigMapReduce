@@ -3,23 +3,27 @@ package fr.eurecom.dsg.mapreduce;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.StringTokenizer;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
 
-import org.apache.hadoop.mapred.lib.HashPartitioner;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
@@ -32,42 +36,62 @@ import org.apache.hadoop.util.ToolRunner;
 
 /****************************
  * 
- * OGGETTO DI LAVORO
+ * OGGETTI DI LAVORO
  *
  ***********************/
 
+enum WayType {
+	INBOUND, OUTBOUND
+}
+
+@SuppressWarnings("rawtypes")
 class CompositeKey implements WritableComparable {
 
 	private String dcode;
-	private String month;
+	private short month;
+	private short wayType;
 
 	public CompositeKey() {
 	}
 
-	public CompositeKey(String udid, String datetime) {
-
+	public CompositeKey(String udid, short datetime, short wayType) {
 		this.dcode = udid;
 		this.month = datetime;
+		this.wayType = wayType;
+	}
+
+	public CompositeKey(CompositeKey c){
+		this.dcode = c.dcode;
+		this.month = c.month;
+		this.wayType = c.wayType;		
 	}
 
 	@Override
 	public String toString() {
+		String s = "";
+		//		if(wayType == WayType.INBOUND.ordinal())
+		//			s="INBOUND: ";
+		//		else
+		//			s="OUTBOUND: ";
 
-		return (new StringBuilder()).append(month).append(',').append(dcode).toString();
+		return (new StringBuilder()).append(s).append(month).append(',').append(dcode).toString();
 	}
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
 
 		dcode = WritableUtils.readString(in);
-		month = WritableUtils.readString(in);
+		month = (short) WritableUtils.readVInt(in);
+		wayType = (short) WritableUtils.readVInt(in);
+
 	}
 
 	@Override
 	public void write(DataOutput out) throws IOException {
 
 		WritableUtils.writeString(out, dcode);
-		WritableUtils.writeString(out, month);
+		WritableUtils.writeVInt(out, month);
+		WritableUtils.writeVInt(out, wayType);
 	}
 
 	public String getUDID() {
@@ -80,31 +104,45 @@ class CompositeKey implements WritableComparable {
 		this.dcode = udid;
 	}
 
-	public String getDatetime() {
+	public short getDatetime() {
 
 		return month;
 	}
 
-	public void setDatetime(String datetime) {
+	public void setDatetime(short datetime) {
 
 		this.month = datetime;
+	}
+
+	public int getWayType(){
+		return wayType;
+	}
+
+	public void setWayType(short wayType){
+		this.wayType = wayType;
 	}
 
 	@Override
 	public int compareTo(Object o) {
 		CompositeKey oComp = (CompositeKey) o;
 		int result;
-		Integer month1 = Integer.parseInt(month);
-		Integer month2 = Integer.parseInt(oComp.month);		
+		Integer month1 = Integer.valueOf(month);
+		Integer month2 = Integer.valueOf(oComp.month);		
+		Integer wt1 = Integer.valueOf(wayType);
+		Integer wt2	= Integer.valueOf(oComp.wayType);
 
-		result = month1.compareTo(month2);
-		if (0 == result) {
-			result = dcode.compareTo(oComp.dcode);
+		result = wt1.compareTo(wt2);
+		if(0 == result){
+			result = month1.compareTo(month2);
+			if (0 == result) {
+				result = dcode.compareTo(oComp.dcode);
+			}
 		}
 		return result;
 	}
 
 }
+
 
 /*****************************************************************************************/
 /*************************** JOB 1 *******************************************************/
@@ -121,7 +159,7 @@ Text, //input value type
 CompositeKey, //output key type
 IntWritable> { //output value type
 
-	protected boolean isEmpty(String s){
+	protected boolean isNotEmpty(String s){
 		return (s != null && !s.isEmpty());
 	}
 
@@ -135,18 +173,29 @@ IntWritable> { //output value type
 			Context context) throws IOException, InterruptedException {
 
 		//the map method (use context.write to emit results)
-		CompositeKey obj = new CompositeKey();
+		CompositeKey obj1 = new CompositeKey();
+		CompositeKey obj2 = new CompositeKey();
 
 		String[] words = value.toString().split(",");
-		String res;
-		//mouth 1, dcode 17
+		//mouth 1, scode 16, dcode 17
 		if(words.length > 17){
 			words[1].replaceAll("[,;\\s]", "");
+			words[16].replaceAll("[,;\\s]", "");
 			words[17].replaceAll("[,;\\s]", "");
-			if(isEmpty(words[1]) && isEmpty(words[17]) && isNumber(words[1])){
-				obj.setDatetime(words[1]);
-				obj.setUDID(words[17]);
-				context.write(obj, new IntWritable(1));
+
+			//inbound
+			if(isNotEmpty(words[1]) && isNotEmpty(words[17]) && isNumber(words[1])){
+				obj1.setDatetime((short)Integer.parseInt(words[1]));
+				obj1.setUDID(words[17]);
+				obj1.setWayType((short)WayType.INBOUND.ordinal());
+				context.write(obj1, new IntWritable(1));
+			}
+			//outbound
+			if(isNotEmpty(words[1]) && isNotEmpty(words[16]) && isNumber(words[1])){
+				obj2.setDatetime((short)Integer.parseInt(words[1]));
+				obj2.setUDID(words[16]);
+				obj2.setWayType((short)WayType.OUTBOUND.ordinal());
+				context.write(obj2, new IntWritable(1));
 			}
 		}
 
@@ -165,80 +214,37 @@ IntWritable, //input value type
 Text, //output key type
 IntWritable> { //output value type
 
-	@Override
-	protected void reduce(CompositeKey obj, //input key type
-			Iterable<IntWritable> values, //input value type
-			Context context) throws IOException, InterruptedException {
+	Map<CompositeKey, Integer> inbound = new HashMap<CompositeKey, Integer>();
+	Map<CompositeKey, Integer> outbound = new HashMap<CompositeKey, Integer>();
+	Map<CompositeKey, Integer> total = new HashMap<CompositeKey, Integer>();
 
-		//reduce method (use context.write to emit results)
-		int sum=0;
-		for(IntWritable v:values){
-			sum+=v.get();
-		}
-		context.write(new Text(obj.toString()), new IntWritable(sum));
-	}
-}
 
-usa cleanup, in cui fai il sort di 3 Map<> variabile globale di reduce
 
-/*****************************************************************************************/
-/*************************** JOB 2 *******************************************************/
-/*****************************************************************************************/
+	/* sorts the map by values. Taken from:
+	 * http://javarevisited.blogspot.it/2012/12/how-to-sort-hashmap-java-by-key-and-value.html
+	 */
+	private static <K extends Comparable, V extends Comparable> Map<K, V> sortByValues(Map<K, V> map) {
+		List<Map.Entry<K, V>> entries = new LinkedList<Map.Entry<K, V>>(map.entrySet());
 
-/****************************
- * 
- * MAPPER
- *
- ***********************/
+		Collections.sort(entries, new Comparator<Map.Entry<K, V>>() {
 
-class ReorderAirplainMapper extends Mapper<LongWritable, //input key type
-Text, //input value type
-CompositeKey, //output key type
-IntWritable> { //output value type
-
-	protected boolean isEmpty(String s){
-		return (s != null && !s.isEmpty());
-	}
-
-	protected boolean isNumber(String s){
-		return s.matches("-?\\d+(\\.\\d+)?");
-	}
-
-	@Override
-	protected void map(LongWritable key, //input key type
-			Text value, //input value type
-			Context context) throws IOException, InterruptedException {
-
-		//the map method (use context.write to emit results)
-		CompositeKey obj = new CompositeKey();
-
-		String[] words = value.toString().split(",");
-		String res;
-		//mouth 1, dcode 17
-		if(words.length > 17){
-			words[1].replaceAll("[,;\\s]", "");
-			words[17].replaceAll("[,;\\s]", "");
-			if(isEmpty(words[1]) && isEmpty(words[17]) && isNumber(words[1])){
-				obj.setDatetime(words[1]);
-				obj.setUDID(words[17]);
-				context.write(obj, new IntWritable(1));
+			@Override
+			public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
+				return o2.getValue().compareTo(o1.getValue());
 			}
+		});
+
+		//LinkedHashMap will keep the keys in the order they are inserted
+		//which is currently sorted on natural ordering
+		Map<K, V> sortedMap = new LinkedHashMap<K, V>();
+
+		for (Map.Entry<K, V> entry : entries) {
+			sortedMap.put(entry.getKey(), entry.getValue());
 		}
 
-	}
+		return sortedMap;
+	}	
 
-}
-
-/****************************
- * 
- * REDUCER
- *
- ***********************/
-
-class ReorderAirplaneReducer extends Reducer<CompositeKey, //input key type
-IntWritable, //input value type
-Text, //output key type
-IntWritable> { //output value type
 
 	@Override
 	protected void reduce(CompositeKey obj, //input key type
@@ -247,12 +253,58 @@ IntWritable> { //output value type
 
 		//reduce method (use context.write to emit results)
 		int sum=0;
+
 		for(IntWritable v:values){
 			sum+=v.get();
 		}
-		context.write(new Text(obj.toString()), new IntWritable(sum));
+
+		if(obj.getWayType() == WayType.INBOUND.ordinal()){
+			inbound.put(new CompositeKey(obj), sum);
+			total.put(new CompositeKey(obj), ((total.get(obj) != null)?total.get(obj):0) + sum);
+		}
+		else{
+			outbound.put(new CompositeKey(obj), sum);
+			total.put(new CompositeKey(obj), ((total.get(obj) != null)?total.get(obj):0) + sum);
+		}
+
+	}
+
+	@Override
+	public void cleanup(Context context) throws IOException, InterruptedException{
+
+		Map<CompositeKey, Integer> inboundReverse = sortByValues(inbound);
+		inboundReverse.putAll(inbound);
+		Map<CompositeKey, Integer> outboundReverse = sortByValues(outbound);
+		outboundReverse.putAll(outbound);
+		Map<CompositeKey, Integer> totalReverse = sortByValues(total);;
+		totalReverse.putAll(total);
+
+		
+		int i = 0;
+		for (Entry<CompositeKey, Integer> entry : inboundReverse.entrySet())
+		{
+			if(i++ >= 20)
+				break;
+			context.write(new Text("INBOUND:" + entry.toString()), new IntWritable(entry.getValue()));
+		}
+		i=0;
+		for (Entry<CompositeKey, Integer> entry : outboundReverse.entrySet())
+		{
+			if(i++ >= 20)
+				break;
+			context.write(new Text("OUTBOUND:" + entry.toString()), new IntWritable(entry.getValue()));
+		}
+		i=0;
+		for (Entry<CompositeKey, Integer> entry : totalReverse.entrySet())
+		{
+			if(i++ >= 20)
+				break;
+			context.write(new Text("TOTAL:" + entry.toString()), new IntWritable(entry.getValue()));
+		}
 	}
 }
+
+//usa cleanup, in cui fai il sort di 3 Map<> variabile globale di reduce
 
 
 /**********************************************************************************/
@@ -273,13 +325,13 @@ public class Query1 extends Configured implements Tool {
 	private int numReducers;
 	private Path inputPath;
 	private Path outputDir;
-	private static final String OUTPUT_PATH = "intermediate_output";
 
 	@Override
 	public int run(String[] args) throws Exception {
 
 		Job job1 = new Job(this.getConf(), "Keys count Airplane Q1");
 		job1.setJarByClass(Query1.class);
+		job1.setNumReduceTasks(numReducers);
 
 		job1.setInputFormatClass(TextInputFormat.class);
 
@@ -293,37 +345,15 @@ public class Query1 extends Configured implements Tool {
 
 		job1.setOutputFormatClass(TextOutputFormat.class);
 
-		FileInputFormat.addInputPath(job1, new Path(args[1]));
-		FileOutputFormat.setOutputPath(job1, new Path(OUTPUT_PATH));
+		FileInputFormat.addInputPath(job1, inputPath);
+		FileOutputFormat.setOutputPath(job1, outputDir);
 
 		job1.setNumReduceTasks(Integer.parseInt(args[0]));
 
-		job1.waitForCompletion(true);
-
 		/**************************************************************/
-		
-		Job job2 = new Job(this.getConf(), "TOP(20) Airplane Q1");
-		job2.setJarByClass(Query1.class);
 
-		job2.setMapperClass(ReorderAirplainMapper.class);
-		job2.setReducerClass(ReorderAirplaneReducer.class);
-		job2.setMapOutputValueClass(IntWritable.class);
 
-		job2.setOutputKeyClass(Text.class);
-		job2.setOutputValueClass(Text.class);
-		job2.setOutputValueClass(IntWritable.class);
-
-		job2.setOutputFormatClass(TextOutputFormat.class);
-
-		job2.setInputFormatClass(TextInputFormat.class);
-		job2.setOutputFormatClass(TextOutputFormat.class);
-
-		TextInputFormat.addInputPath(job2, new Path(OUTPUT_PATH));
-		TextOutputFormat.setOutputPath(job2, new Path(args[1]));
-
-		job2.setNumReduceTasks(Integer.parseInt(args[0]));
-
-		return job2.waitForCompletion(true) ? 0 : 1;		
+		return job1.waitForCompletion(true) ? 0 : 1;		
 	}
 
 	public Query1 (String[] args) {
