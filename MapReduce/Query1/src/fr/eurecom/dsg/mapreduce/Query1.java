@@ -214,9 +214,9 @@ IntWritable, //input value type
 Text, //output key type
 IntWritable> { //output value type
 
-	Map<CompositeKey, Integer> inbound = new HashMap<CompositeKey, Integer>();
-	Map<CompositeKey, Integer> outbound = new HashMap<CompositeKey, Integer>();
-	Map<CompositeKey, Integer> total = new HashMap<CompositeKey, Integer>();
+	Map<CompositeKey, Integer> inbound = new LinkedHashMap<CompositeKey, Integer>();
+	Map<CompositeKey, Integer> outbound = new LinkedHashMap<CompositeKey, Integer>();
+	Map<CompositeKey, Integer> total = new LinkedHashMap<CompositeKey, Integer>();
 
 
 
@@ -272,35 +272,112 @@ IntWritable> { //output value type
 	@Override
 	public void cleanup(Context context) throws IOException, InterruptedException{
 
-		Map<CompositeKey, Integer> inboundReverse = sortByValues(inbound);
-		inboundReverse.putAll(inbound);
-		Map<CompositeKey, Integer> outboundReverse = sortByValues(outbound);
-		outboundReverse.putAll(outbound);
-		Map<CompositeKey, Integer> totalReverse = sortByValues(total);;
-		totalReverse.putAll(total);
+		int month = 1;
+		int counter = 0;
 
-		
-		int i = 0;
-		for (Entry<CompositeKey, Integer> entry : inboundReverse.entrySet())
-		{
-			if(i++ >= 20)
-				break;
-			context.write(new Text("INBOUND:" + entry.toString()), new IntWritable(entry.getValue()));
+		Map<CompositeKey, Integer> inboundMonth = new HashMap<CompositeKey, Integer>();
+		Map<CompositeKey, Integer> outboundMonth = new HashMap<CompositeKey, Integer>();
+		Map<CompositeKey, Integer> totalMonth = new HashMap<CompositeKey, Integer>();
+		CompositeKey buff = null;
+
+		//inbound
+		for ( CompositeKey key : inbound.keySet() ) {
+			if((counter++ >= inbound.size() - 1) || (month != key.getDatetime())){
+				month = key.getDatetime();
+				//save actual key for external cycle
+				buff = key;
+
+				//exec sorting by values
+				Map<CompositeKey, Integer> inboundReverse = sortByValues(inboundMonth);
+				inboundReverse.putAll(inboundMonth);
+				int j = 0;
+				for (Entry<CompositeKey, Integer> entry : inboundReverse.entrySet())
+				{
+					if(j++ >= 20)
+						break;
+					context.write(new Text("INBOUND:" + entry.toString()), new IntWritable(entry.getValue()));
+				}
+				j = 0;
+				inboundMonth.clear();
+			}
+			//same month
+			else{
+				if(buff != null){
+					inboundMonth.put(new CompositeKey(buff), inbound.get(buff));
+					buff = null;
+				}
+				inboundMonth.put(new CompositeKey(key), inbound.get(key));
+			}
 		}
-		i=0;
-		for (Entry<CompositeKey, Integer> entry : outboundReverse.entrySet())
-		{
-			if(i++ >= 20)
-				break;
-			context.write(new Text("OUTBOUND:" + entry.toString()), new IntWritable(entry.getValue()));
+
+		month = 1;
+		counter = 0;
+
+		//null pointer exception
+		//outbound
+		for ( CompositeKey key : outbound.keySet() ) {
+			if((counter++ >= outbound.size() - 1) || (month != key.getDatetime())){
+				month = key.getDatetime();
+				//save actual key for external cycle
+				buff = key;
+
+				//exec sorting by values
+				Map<CompositeKey, Integer> outboundReverse = sortByValues(outboundMonth);
+				outboundReverse.putAll(outboundMonth);
+				int j = 0;
+				for (Entry<CompositeKey, Integer> entry : outboundReverse.entrySet())
+				{
+					if(j++ >= 20)
+						break;
+					context.write(new Text("OUTBOUND:" + entry.toString()), new IntWritable(entry.getValue()));
+				}
+				j = 0;
+				outboundMonth.clear();
+			}
+			//same month
+			else{
+				if(buff != null){
+					outboundMonth.put(new CompositeKey(buff), outbound.get(buff));
+					buff = null;
+				}
+				outboundMonth.put(new CompositeKey(key), outbound.get(key));
+			}
 		}
-		i=0;
-		for (Entry<CompositeKey, Integer> entry : totalReverse.entrySet())
-		{
-			if(i++ >= 20)
-				break;
-			context.write(new Text("TOTAL:" + entry.toString()), new IntWritable(entry.getValue()));
+
+
+		month = 1;
+		counter = 0;
+
+		//total
+		for ( CompositeKey key : total.keySet() ) {
+			if((counter++ >= total.size() - 1) || (month != key.getDatetime())){
+				month = key.getDatetime();
+				//save actual key for external cycle
+				buff = key;
+
+				//exec sorting by values
+				Map<CompositeKey, Integer> totalReverse = sortByValues(totalMonth);
+				totalReverse.putAll(totalMonth);
+				int j = 0;
+				for (Entry<CompositeKey, Integer> entry : totalReverse.entrySet())
+				{
+					if(j++ >= 20)
+						break;
+					context.write(new Text("TOTAL:" + entry.toString()), new IntWritable(entry.getValue()));
+				}
+				j = 0;
+				totalMonth.clear();
+			}
+			//same month
+			else{
+				if(buff != null){
+					totalMonth.put(new CompositeKey(buff), total.get(buff));
+					buff = null;
+				}
+				totalMonth.put(new CompositeKey(key), total.get(key));
+			}
 		}
+
 	}
 }
 
