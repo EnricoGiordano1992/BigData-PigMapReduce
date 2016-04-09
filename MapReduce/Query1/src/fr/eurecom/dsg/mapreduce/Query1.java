@@ -3,6 +3,7 @@ package fr.eurecom.dsg.mapreduce;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -140,6 +141,31 @@ class CompositeKey implements WritableComparable {
 		}
 		return result;
 	}
+	
+	@Override
+	public boolean equals(Object o) {
+		CompositeKey temp = (CompositeKey) o;
+
+		if (this == temp) 
+			return true;
+		else if (temp == null || getClass() != temp.getClass()) 
+			return false;
+		else{
+			if(this.dcode == temp.dcode && this.month == temp.month && this.wayType == temp.wayType)
+				return true;
+			else
+				return false;
+		}
+	}
+
+	@Override
+	public int hashCode(){
+		String builder = "";
+		builder += this.dcode;
+		builder += this.month;
+		builder += this.wayType;
+		return builder.hashCode();
+	}
 
 }
 
@@ -258,15 +284,23 @@ IntWritable> { //output value type
 			sum+=v.get();
 		}
 
+		//inbound
 		if(obj.getWayType() == WayType.INBOUND.ordinal()){
 			inbound.put(new CompositeKey(obj), sum);
-			total.put(new CompositeKey(obj), ((total.get(obj) != null)?total.get(obj):0) + sum);
 		}
+		//outbound
 		else{
 			outbound.put(new CompositeKey(obj), sum);
-			total.put(new CompositeKey(obj), ((total.get(obj) != null)?total.get(obj):0) + sum);
 		}
-
+		
+		//total (wayTime == 0)
+		CompositeKey temp = new CompositeKey(obj.getUDID(), obj.getDatetime(), (short) 0);
+//		System.out.println("aggiungo: " + temp.getUDID() + "," + temp.getDatetime() + "," + temp.getWayType());
+//		if(total.containsKey(temp))
+//			System.out.println("chiave uguale: " + temp.toString());
+		total.put(new CompositeKey(temp), (total.containsKey(temp)?total.get(temp):0) + sum);
+		temp = null;
+		obj = null;
 	}
 
 	@Override
@@ -312,6 +346,7 @@ IntWritable> { //output value type
 
 		month = 1;
 		counter = 0;
+		buff = null;
 
 		//null pointer exception
 		//outbound
@@ -347,9 +382,11 @@ IntWritable> { //output value type
 
 		month = 1;
 		counter = 0;
+		buff = null;
 
 		//total
-		for ( CompositeKey key : total.keySet() ) {
+		Map<CompositeKey, Integer> totalOrdered = new TreeMap<CompositeKey, Integer>(total);		
+		for ( CompositeKey key : totalOrdered.keySet() ) {
 			if((counter++ >= total.size() - 1) || (month != key.getDatetime())){
 				month = key.getDatetime();
 				//save actual key for external cycle
@@ -380,8 +417,6 @@ IntWritable> { //output value type
 
 	}
 }
-
-//usa cleanup, in cui fai il sort di 3 Map<> variabile globale di reduce
 
 
 /**********************************************************************************/
