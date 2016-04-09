@@ -1,0 +1,166 @@
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+class CompositeKey{
+
+	private String dcode;
+	private short month;
+	private short wayType;
+
+	public CompositeKey() {
+	}
+
+	public CompositeKey(String udid, short datetime, short wayType) {
+		this.dcode = udid;
+		this.month = datetime;
+		this.wayType = wayType;
+	}
+
+	public CompositeKey(CompositeKey c){
+		this.dcode = c.dcode;
+		this.month = c.month;
+		this.wayType = c.wayType;		
+	}
+
+	@Override
+	public String toString() {
+		String s = "";
+		//		if(wayType == WayType.INBOUND.ordinal())
+		//			s="INBOUND: ";
+		//		else
+		//			s="OUTBOUND: ";
+
+		return (new StringBuilder()).append(s).append(month).append(',').append(dcode).toString();
+	}
+
+
+	public String getUDID() {
+
+		return dcode;
+	}
+
+	public void setUDID(String udid) {
+
+		this.dcode = udid;
+	}
+
+	public short getDatetime() {
+
+		return month;
+	}
+
+	public void setDatetime(short datetime) {
+
+		this.month = datetime;
+	}
+
+	public int getWayType(){
+		return wayType;
+	}
+
+	public void setWayType(short wayType){
+		this.wayType = wayType;
+	}
+
+	@Override
+	public int compareTo(Object o) {
+		CompositeKey oComp = (CompositeKey) o;
+		int result;
+		Integer month1 = Integer.valueOf(month);
+		Integer month2 = Integer.valueOf(oComp.month);		
+		Integer wt1 = Integer.valueOf(wayType);
+		Integer wt2	= Integer.valueOf(oComp.wayType);
+
+		result = wt1.compareTo(wt2);
+		if(0 == result){
+			result = month1.compareTo(month2);
+			if (0 == result) {
+				result = dcode.compareTo(oComp.dcode);
+			}
+		}
+		return result;
+	}
+
+}
+
+
+public class main {
+
+	private static <K extends Comparable, V extends Comparable> Map<K, V> sortByValues(Map<K, V> map) {
+		List<Map.Entry<K, V>> entries = new LinkedList<Map.Entry<K, V>>(map.entrySet());
+
+		Collections.sort(entries, new Comparator<Map.Entry<K, V>>() {
+
+			@Override
+			public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
+				return o2.getValue().compareTo(o1.getValue());
+			}
+		});
+
+		//LinkedHashMap will keep the keys in the order they are inserted
+		//which is currently sorted on natural ordering
+		Map<K, V> sortedMap = new LinkedHashMap<K, V>();
+
+		for (Map.Entry<K, V> entry : entries) {
+			sortedMap.put(entry.getKey(), entry.getValue());
+		}
+
+		return sortedMap;
+	}	
+	
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+		Map<String, Integer> inbound = new LinkedHashMap<String, Integer>();
+		inbound.put(new String("ciao"), 1);
+		inbound.put(new String("come"), 2);
+		inbound.put(new String("stai"), 3);
+
+		
+		
+		
+		//inbound
+		for ( CompositeKey key : inbound.keySet() ) {
+			if(month != key.getDatetime()){
+				month = key.getDatetime();
+				//save actual key for external cycle
+				buff = new CompositeKey(key);
+
+				//exec sorting by values
+				Map<CompositeKey, Integer> inboundReverse = sortByValues(inboundMonth);
+				inboundReverse.putAll(inboundMonth);
+				int j = 0;
+				for (Entry<CompositeKey, Integer> entry : inboundReverse.entrySet())
+				{
+					if(j++ >= 20)
+						break;
+					context.write(new Text("INBOUND:" + entry.toString()), new IntWritable(entry.getValue()));
+				}
+				inboundMonth = null;
+				inboundMonth = new HashMap<CompositeKey, Integer>();
+			}
+			//same month
+			else{
+				if(buff != null){
+					inboundMonth.put(new CompositeKey(buff), inbound.get(buff));
+					buff = null;
+				}
+				inboundMonth.put(new CompositeKey(key), inbound.get(key));
+			}
+		}
+		
+	}
+
+}

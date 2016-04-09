@@ -1,0 +1,20 @@
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import fr.eurecom.dsg.mapreduce.CompositeKey;
+
+
+public class main {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+		Map<CompositeKey, Integer> inbound = new LinkedHashMap<CompositeKey, Integer>();
+		inbound.put(new CompositeKey(obj), sum);
+
+	}
+
+}

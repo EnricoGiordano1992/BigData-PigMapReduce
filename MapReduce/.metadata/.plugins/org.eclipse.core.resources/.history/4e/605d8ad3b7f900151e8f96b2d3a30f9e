@@ -1,0 +1,76 @@
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableUtils;
+
+class CompositeKeyOutbound implements WritableComparable {
+
+	private String dcode;
+	private String month;
+
+	public CompositeKeyOutbound() {
+	}
+
+	public CompositeKeyOutbound(String udid, String datetime) {
+
+		this.dcode = udid;
+		this.month = datetime;
+	}
+
+	@Override
+	public String toString() {
+
+		return (new StringBuilder()).append(month).append(',').append(dcode).toString();
+	}
+
+	@Override
+	public void readFields(DataInput in) throws IOException {
+
+		dcode = WritableUtils.readString(in);
+		month = WritableUtils.readString(in);
+	}
+
+	@Override
+	public void write(DataOutput out) throws IOException {
+
+		WritableUtils.writeString(out, dcode);
+		WritableUtils.writeString(out, month);
+	}
+
+	public String getUDID() {
+
+		return dcode;
+	}
+
+	public void setUDID(String udid) {
+
+		this.dcode = udid;
+	}
+
+	public String getDatetime() {
+
+		return month;
+	}
+
+	public void setDatetime(String datetime) {
+
+		this.month = datetime;
+	}
+
+	@Override
+	public int compareTo(Object o) {
+		CompositeKeyOutbound oComp = (CompositeKeyOutbound) o;
+		int result;
+		Integer month1 = Integer.parseInt(month);
+		Integer month2 = Integer.parseInt(oComp.month);		
+
+		result = month1.compareTo(month2);
+		if (0 == result) {
+			result = dcode.compareTo(oComp.dcode);
+		}
+		return result;
+	}
+
+}

@@ -1,0 +1,6 @@
+INDEX VERSION 1.126+/home/student/workspace/MapReduce/.metadata/.plugins/org.eclipse.jdt.core
+2799131500.index
+1071516374.index
+3425396786.index
+680312502.index
+1365046713.index

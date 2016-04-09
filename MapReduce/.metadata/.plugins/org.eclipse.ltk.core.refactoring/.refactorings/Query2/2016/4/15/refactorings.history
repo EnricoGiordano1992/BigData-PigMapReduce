@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename type &apos;fr.eurecom.dsg.mapreduce.Query1&apos; to &apos;Query2&apos;&#x0A;- Original project: &apos;Query2&apos;&#x0A;- Original element: &apos;fr.eurecom.dsg.mapreduce.Query1&apos;&#x0A;- Renamed element: &apos;fr.eurecom.dsg.mapreduce.Query2&apos;&#x0A;- Update references to refactored element&#x0A;- Update textual occurrences in comments and strings" description="Rename type &apos;Query1&apos;" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src&lt;fr.eurecom.dsg.mapreduce{Query1.java[Query1" matchStrategy="1" name="Query2" qualified="false" references="true" similarDeclarations="false" stamp="1460217458389" textual="false" version="1.0"/>
+</session>
