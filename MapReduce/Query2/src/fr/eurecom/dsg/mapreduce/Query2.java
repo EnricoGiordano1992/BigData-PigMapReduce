@@ -43,10 +43,6 @@ import org.apache.hadoop.util.ToolRunner;
  *
  ***********************/
 
-enum WayType {
-	INBOUND, OUTBOUND
-}
-
 @SuppressWarnings("rawtypes")
 class CompositeKey implements WritableComparable {
 
@@ -177,7 +173,6 @@ IntWritable> { //output value type
 
 		//the map method (use context.write to emit results)
 		CompositeKey obj1 = new CompositeKey();
-		CompositeKey obj2 = new CompositeKey();
 
 		String[] words = value.toString().split(",");
 		//mouth 1, carrier 8
@@ -248,7 +243,7 @@ public class Query2 extends Configured implements Tool {
 	@Override
 	public int run(String[] args) throws Exception {
 
-		Job job1 = new Job(this.getConf(), "Keys count Airplane Q1");
+		Job job1 = new Job(this.getConf(), "Keys count Airplane Q2");
 		job1.setJarByClass(Query2.class);
 		job1.setNumReduceTasks(numReducers);
 

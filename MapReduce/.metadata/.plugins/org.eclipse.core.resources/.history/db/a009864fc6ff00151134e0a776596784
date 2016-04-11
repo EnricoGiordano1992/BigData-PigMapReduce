@@ -1,0 +1,315 @@
+package fr.eurecom.dsg.mapreduce;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableUtils;
+
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+
+
+/****************************
+ * 
+ * OGGETTI DI LAVORO
+ *
+ ***********************/
+
+@SuppressWarnings("rawtypes")
+class CompositeKey implements WritableComparable {
+
+	private short day;
+	private short month;
+	private int dow;
+	private int delay;
+	private int total_flights;
+	private int delayed_flights;
+	private int ratio_flights;
+
+	public CompositeKey() {
+	}
+
+	public CompositeKey(short day, short month, int dow, int delay) {
+		this.day = day;
+		this.month = month;
+		this.dow = dow;
+		this.delay = delay;
+	}
+
+	public CompositeKey(CompositeKey c){
+		this.day = c.day;
+		this.month = c.month;
+		this.dow = c.dow;
+		this.delay = c.delay;
+	}
+
+	@Override
+	public String toString() {
+		return (new StringBuilder()).append("(").append(month).append(',').append(dow).append("),").append(total_flights).append(',').append(delayed_flights).append(',').append(ratio_flights).toString();
+	}
+
+	@Override
+	public void readFields(DataInput in) throws IOException {
+
+		carrier = WritableUtils.readString(in);
+		month = (short) WritableUtils.readVInt(in);
+
+	}
+
+	@Override
+	public void write(DataOutput out) throws IOException {
+
+		WritableUtils.writeString(out, carrier);
+		WritableUtils.writeVInt(out, month);
+	}
+
+	public short getDay(){
+		return this.day;
+	}
+	
+	public void setDay(short day){
+		this.day = day;
+	}
+	
+	public short getMonth(){
+		return this.month;
+	}
+	
+	public void setMonth(short month){
+		this.month = month;
+	}
+	
+	public int getDow(){
+		return this.dow;
+	}
+	
+	public void setDow(int dow){
+		this.dow = dow;
+	}
+	
+	public int getDelay(){
+		return this.delay;
+	}
+	
+	public void setDelay(int arrtime, int satime){
+		this.delay = arrtime - satime;
+	}
+
+	@Override
+	public int compareTo(Object o) {
+		CompositeKey oComp = (CompositeKey) o;
+		int result;
+		Integer month1 = Integer.valueOf(month);
+		Integer month2 = Integer.valueOf(oComp.month);		
+
+		result = month1.compareTo(month2);
+		if (0 == result) {
+			result = carrier.compareTo(oComp.carrier);
+		}
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		CompositeKey temp = (CompositeKey) o;
+
+		if (this == temp) 
+			return true;
+		else if (temp == null || getClass() != temp.getClass()) 
+			return false;
+		else{
+			if(this.carrier == temp.carrier && this.month == temp.month)
+				return true;
+			else
+				return false;
+		}
+	}
+
+	@Override
+	public int hashCode(){
+		String builder = "";
+		builder += this.month;
+		builder += this.carrier;
+		return builder.hashCode();
+	}
+
+}
+
+
+/*****************************************************************************************/
+/*************************** JOB 1 *******************************************************/
+/*****************************************************************************************/
+
+/****************************
+ * 
+ * MAPPER
+ *
+ ***********************/
+
+class WCAirplaneMapper extends Mapper<LongWritable, //input key type
+Text, //input value type
+CompositeKey, //output key type
+IntWritable> { //output value type
+
+	protected boolean isNotEmpty(String s){
+		return (s != null && !s.isEmpty());
+	}
+
+	protected boolean isNumber(String s){
+		return s.matches("-?\\d+(\\.\\d+)?");
+	}
+
+	@Override
+	protected void map(LongWritable key, //input key type
+			Text value, //input value type
+			Context context) throws IOException, InterruptedException {
+
+		//the map method (use context.write to emit results)
+		CompositeKey obj1 = new CompositeKey();
+		CompositeKey obj2 = new CompositeKey();
+
+		String[] words = value.toString().split(",");
+		//mouth 1, carrier 8
+		if(words.length > 8){
+			words[1].replaceAll("[,;\\s]", "");
+			words[8].replaceAll("[,;\\s]", "");
+
+			if(isNotEmpty(words[1]) && isNotEmpty(words[8]) && isNumber(words[1])){
+				obj1.setDatetime((short)Integer.parseInt(words[1]));
+				obj1.setCarrier(words[8]);
+				context.write(obj1, new IntWritable(1));
+			}
+		}
+
+	}
+
+}
+
+/****************************
+ * 
+ * REDUCER
+ *
+ ***********************/
+
+class WCAirplaneReducer extends Reducer<CompositeKey, //input key type
+IntWritable, //input value type
+Text, //output key type
+DoubleWritable> { //output value type
+
+	@Override
+	protected void reduce(CompositeKey obj, //input key type
+			Iterable<IntWritable> values, //input value type
+			Context context) throws IOException, InterruptedException {
+
+		//reduce method (use context.write to emit results)
+		int sum=0;
+		double res = 0;
+		for(IntWritable v:values){
+			sum+=v.get();
+		}
+
+		res = Math.log10(sum);
+		context.write(new Text(obj.toString()), new DoubleWritable(res));
+	}
+
+}
+
+
+/**********************************************************************************/
+/**********************************************************************************/
+/**********************************************************************************/
+/**********************************************************************************/
+/**********************************************************************************/
+/**********************************************************************************/
+
+/****************************
+ * 
+ * QUERY DRIVER
+ *
+ ***********************/
+
+public class Query3 extends Configured implements Tool {
+
+	private int numReducers;
+	private Path inputPath;
+	private Path outputDir;
+
+	@Override
+	public int run(String[] args) throws Exception {
+
+		Job job1 = new Job(this.getConf(), "Keys count Airplane Q1");
+		job1.setJarByClass(Query3.class);
+		job1.setNumReduceTasks(numReducers);
+
+		job1.setInputFormatClass(TextInputFormat.class);
+
+		job1.setMapperClass(WCAirplaneMapper.class);
+		job1.setMapOutputKeyClass(CompositeKey.class);
+		job1.setMapOutputValueClass(IntWritable.class);
+
+		job1.setReducerClass(WCAirplaneReducer.class);
+		job1.setOutputKeyClass(Text.class);
+		job1.setOutputValueClass(IntWritable.class);
+
+		job1.setOutputFormatClass(TextOutputFormat.class);
+
+		FileInputFormat.addInputPath(job1, inputPath);
+		FileOutputFormat.setOutputPath(job1, outputDir);
+
+		job1.setNumReduceTasks(Integer.parseInt(args[0]));
+
+		/**************************************************************/
+
+
+		return job1.waitForCompletion(true) ? 0 : 1;		
+	}
+
+	public Query3 (String[] args) {
+		if (args.length != 3) {
+			System.out.println("Usage: WordCount <num_reducers> <input_path> <output_path>");
+			System.exit(0);
+		}
+		this.numReducers = Integer.parseInt(args[0]);
+		this.inputPath = new Path(args[1]);
+		this.outputDir = new Path(args[2]);
+	}
+
+	public static void main(String args[]) throws Exception {
+		int res = ToolRunner.run(new Configuration(), new Query3(args), args);
+		System.exit(res);
+	}
+}
+
+/**********************************************************************************/
+/**********************************************************************************/
+/**********************************************************************************/
+
+
