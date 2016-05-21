@@ -94,27 +94,27 @@ class CompositeKey implements WritableComparable {
 	public short getDay(){
 		return this.day;
 	}
-	
+
 	public void setDay(short day){
 		this.day = day;
 	}
-	
+
 	public short getMonth(){
 		return this.month;
 	}
-	
+
 	public void setMonth(short month){
 		this.month = month;
 	}
-	
+
 	public int getDow(){
 		return this.dow;
 	}
-	
+
 	public void setDow(int dow){
 		this.dow = dow;
 	}
-	
+
 	public int getDelay(){
 		return this.delay;
 	}
@@ -132,22 +132,12 @@ class CompositeKey implements WritableComparable {
 		int result;
 		Integer month1 = Integer.valueOf(month);
 		Integer month2 = Integer.valueOf(oComp.month);		
-//		Integer day1 = Integer.valueOf(day);
-//		Integer day2 = Integer.valueOf(oComp.day);		
 		Integer dow1 = Integer.valueOf(dow);
 		Integer dow2 = Integer.valueOf(oComp.dow);		
-//		Integer delay1 = Integer.valueOf(delay);
-//		Integer delay2 = Integer.valueOf(oComp.delay);		
-				
+
 		result = month1.compareTo(month2);
 		if (0 == result) {
-//			result = day1.compareTo(day2);
-//			if (0 == result) {
-				result = dow1.compareTo(dow2);
-//				if (0 == result) {
-//					result = delay1.compareTo(delay2);
-//				}
-//			}
+			result = dow1.compareTo(dow2);
 		}
 		return result;
 	}
@@ -161,7 +151,6 @@ class CompositeKey implements WritableComparable {
 		else if (temp == null || getClass() != temp.getClass()) 
 			return false;
 		else{
-//			if(this.day == temp.day && this.month == temp.month && this.dow == temp.dow && this.delay == temp.delay)
 			if(this.month == temp.month && this.dow == temp.dow)
 				return true;
 			else
@@ -172,10 +161,8 @@ class CompositeKey implements WritableComparable {
 	@Override
 	public int hashCode(){
 		String builder = "";
-//		builder += this.day;
 		builder += this.month;
 		builder += this.dow;
-//		builder += this.delay;
 		return builder.hashCode();
 	}
 
@@ -262,7 +249,7 @@ Text> { //output value type
 				delayed_sum += v.get();
 			}
 		}
-		
+
 		ratio = delayed_sum / total_sum;
 
 		context.write(new Text(obj.toString()), new Text(((int)total_sum) + "," + ((int)delayed_sum) + "," + ratio));
