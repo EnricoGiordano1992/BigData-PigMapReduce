@@ -130,11 +130,18 @@ class CompositeKey implements WritableComparable {
 	public int compareTo(Object o) {
 		CompositeKey oComp = (CompositeKey) o;
 		int result;
+		Integer month1 = Integer.valueOf(month);
+		Integer month2 = Integer.valueOf(oComp.month);		
 		String carrier1 = carrier;
 		String carrier2 = oComp.carrier;		
 
-		result = carrier1.compareTo(carrier2);
+		result = month1.compareTo(month2);
+		if (0 == result) {
+			result = carrier1.compareTo(carrier2);
+		}
 		return result;
+//		result = carrier1.compareTo(carrier2);
+//		return result;
 	}
 
 	@Override
@@ -146,7 +153,7 @@ class CompositeKey implements WritableComparable {
 		else if (temp == null || getClass() != temp.getClass()) 
 			return false;
 		else{
-			if(this.carrier == temp.carrier)
+			if(this.carrier == temp.carrier && this.month == temp.month)
 				return true;
 			else
 				return false;
@@ -195,7 +202,7 @@ IntWritable> { //output value type
 		CompositeKey obj1 = new CompositeKey();
 
 		String[] words = value.toString().split(",");
-		//mouth 1, day 2, arrtime 6, satime 7, carrier 8
+		//mouth 1, day 2, arrtime 6, scrarrtime 7, carrier 8
 		if(words.length > 8){
 			words[1].replaceAll("[,;\\s]", "");
 			words[3].replaceAll("[,;\\s]", "");

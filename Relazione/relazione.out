@@ -1,11 +1,15 @@
-\BOOKMARK [1][-]{section.0.1}{Introduzione}{}% 1
-\BOOKMARK [1][-]{section.0.2}{Caso di studio}{}% 2
-\BOOKMARK [1][-]{section.0.3}{Java MapReduce}{}% 3
-\BOOKMARK [1][-]{section.0.4}{Pig}{}% 4
-\BOOKMARK [1][-]{section.0.5}{Implementazione delle Query}{}% 5
-\BOOKMARK [2][-]{subsection.0.5.1}{Query 1}{section.0.5}% 6
-\BOOKMARK [2][-]{subsection.0.5.2}{Query 2}{section.0.5}% 7
-\BOOKMARK [2][-]{subsection.0.5.3}{Query 3}{section.0.5}% 8
-\BOOKMARK [2][-]{subsection.0.5.4}{Query 4}{section.0.5}% 9
-\BOOKMARK [2][-]{subsection.0.5.5}{Query 5}{section.0.5}% 10
-\BOOKMARK [1][-]{section.0.6}{Osservazioni personali}{}% 11
+\BOOKMARK [1][-]{section.1}{Introduzione}{}% 1
+\BOOKMARK [1][-]{section.2}{Caso di studio}{}% 2
+\BOOKMARK [1][-]{section.3}{Java MapReduce}{}% 3
+\BOOKMARK [1][-]{section.4}{Pig}{}% 4
+\BOOKMARK [1][-]{section.5}{Implementazione delle Query}{}% 5
+\BOOKMARK [2][-]{subsection.5.1}{Query 1}{section.5}% 6
+\BOOKMARK [2][-]{subsection.5.2}{Query 2}{section.5}% 7
+\BOOKMARK [2][-]{subsection.5.3}{Query 3}{section.5}% 8
+\BOOKMARK [2][-]{subsection.5.4}{Query 4}{section.5}% 9
+\BOOKMARK [2][-]{subsection.5.5}{Query 5}{section.5}% 10
+\BOOKMARK [1][-]{section.6}{Confronto tra tempi}{}% 11
+\BOOKMARK [1][-]{section.7}{Funzioni utilizzate}{}% 12
+\BOOKMARK [2][-]{subsection.7.1}{Pig}{section.7}% 13
+\BOOKMARK [2][-]{subsection.7.2}{Java MapReduce}{section.7}% 14
+\BOOKMARK [1][-]{section.8}{Osservazioni personali}{}% 15

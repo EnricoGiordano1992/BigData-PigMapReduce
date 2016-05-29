@@ -175,8 +175,8 @@ IntWritable> { //output value type
 		String[] words = value.toString().split(",");
 		//scode 16, dcode 17
 		if(words.length > 17){
-			words[1].replaceAll("[,;\\s]", "");
-			words[8].replaceAll("[,;\\s]", "");
+			words[16].replaceAll("[,;\\s]", "");
+			words[17].replaceAll("[,;\\s]", "");
 
 			if(isNotEmpty(words[16]) && isNotEmpty(words[17])){
 				obj1.setScode(words[16]);

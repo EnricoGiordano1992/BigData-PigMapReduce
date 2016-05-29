@@ -1,4 +1,3 @@
--- First, we load the raw data from a test dataset
 RAW_DATA = LOAD '/user/student/PROGETTO/INPUT/2008.csv' USING PigStorage(',') AS
 	(year: int, month: int, day: int, dow: int,
 	dtime: int, sdtime: int, arrtime: int, satime: int,

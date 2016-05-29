@@ -4,7 +4,7 @@
 % This is a simple template for a LaTeX document using the "article" class.
 % See "book", "report", "letter" for other types of document.
 
-\documentclass[11pt]{report} % use larger type; default would be 10pt
+\documentclass[11pt]{article} % use larger type; default would be 10pt
 
 \usepackage[utf8]{inputenc} % set input encoding (not needed with XeLaTeX)
 
@@ -97,6 +97,39 @@ Per confrontare questi due sistemi, è stato scelto di implementare le query pro
 Il formato CSV (comma-separated values) permette di descrivere una entry del proprio dataset organizzandola in colonne: la prima riga descrive i nomi dei campi, separati da virgola, mentre le successive rappresentano le entry, i cui campi sono ordinari rispetto alla prima riga e separati da virgola. Ogni entry termina con un carattere ``newline'', organizzando quindi il Dataset in righe e colonne. Il formato CSV è largamente utilizzato in questo ambito in quanto permette una formattazione facile da parserizzare facilitando l'analisi dei dati; infatti, utilizzando una qualsiasi funzione di parsing o di tokenize, si riesce ad ottenere ogni campo di una entry come se fosse organizzato il tutto in una matrice (o in un vettore se si analizza ogni singola riga).
 
 Analizzando questi file però, si può notare che non tutte le loro righe rispettano una formattazione omogenea per rappresentare i tipi di dati, ovvero non è gestito il campo vuoto (a volte si presenta vuoto, altre presenta il valore NULL), oppure sono presenti caratteri speciali,o altrimenti dopo la virgola separatrice è presente uno spazio (invalidando quindi i confronti semplici tra stringhe), oppure alcune righe non rispettano la formattazione in base alle colonne; questo fatto è di notevole importanza perché, in base al sistema utilizzato, si possono avere diversi risultati, in quanto è necessario applicare filtri in maniera più approfondita per ogni riga (ma non sempre il sistema permette di applicare questi filtri e avrebbe bisogno di ausili esterni). Inoltre, le query cercano di sfruttare i ``gruppi'' e le ``chiavi composte'' (ovvero si devono contare insiemi di oggetti con proprietà comuni): questo perché sono query orientate all'utilizzo di Pig, che permette di raggruppare dati in insiemi con proprietà comuni, quindi è stato necessario sfruttare un approccio diverso per l'ambiente MapReduce, non utilizzando la semplice lettura di una chiave associandoci un valore, ma utilizzando le ``Composite Key'', che verranno descritte nelle prossime sezioni.
+
+Il Dataset ha i seguenti campi:
+\begin{itemize}
+\item    Year,  l'anno del volo aereo, i valori sono compresi tra 1987 e 2008;
+\item    Month,  il mese del volo aereo, i valori sono compresi tra 1 e 12;
+\item    DayofMonth, il giorno del mese del volo aereo, i valori sono compresi tra 1 e 31;
+\item    DayOfWeek,  il giorno della settimana del volo aereo, i valori sono compresi tra 1 (Lunedì) e 7 (Domenica);
+\item    DepTime, l'ora della partenza (local, hhmm);
+\item    CRSDepTime, l'ora schedulata della partenza (local, hhmm);
+\item    ArrTime, l'ora di arrivo (local, hhmm);
+\item    CRSArrTime, l'ora schedulata di arrivo (local, hhmm);
+\item    UniqueCarrier, il codice univoco della compagnia aerea;
+\item   FlightNum, il numero del volo;
+\item   TailNum, il numero della coda dell'aereo;
+\item   ActualElapsedTime, il tempo passato in minuti;
+\item   CRSElapsedTime, il tempo schedulato passato in minuti;
+\item   AirTime, il tempo di volo in minuti;
+\item   ArrDelay, il ritardo di arrivo in minuti;
+\item   DepDelay, il ritardo di partenza in minuti;
+\item   Origin, il codice IATA dell'aereoporto di partenza;
+\item   Dest, il codice IATA dell'aereoporto di destinazione;
+\item   Distance, la distanza di volo in miglia;
+\item   TaxiIn, il tempo di arrivo in taxi in minuti;
+\item   TaxiOut , il tempo di uscita in taxi in minuti;
+\item   Cancelled, booleano per indicare se il volo è stato cancellato;
+\item   CancellationCode, il motivo della cancellazione in codice (A = compagnia aerea, B = mal tempo, C = NAS, D = sicurezza);
+\item   Diverted, booleano per indicare se il volo è stato deviato (1 = si, 0 = no);
+\item   CarrierDelay, il ritardo dovuto alla compagnia aerea in minuti;
+\item   WeatherDelay, il ritardo causato dal mal tempo in minuti;
+\item   NASDelay, il ritardo causato dal NAS in minuti;
+\item   SecurityDelay, il ritardo dovuto a problemi di sicurezza in minuti;
+\item   LateAircraftDelay, il ritardo aereo in minuti.
+\end{itemize}
 %, ovvero una tecnica basata sull'implementazione personalizzata dei WriteComparable, quindi gestendo le chiavi come oggetti con diversi campi.
 
 \section{Java MapReduce}
@@ -114,6 +147,15 @@ Java MapReduce è un framework Java che permette di analizzate grandi quantità 
 
 Solitamente come chiave si utilizza una stringa singola che viene contata in base al numero di stringhe uguali in un Dataset; in questo progetto però si dovevano eseguire delle query che necessitavano più di una singola chiave per trovare l'output corretto, quindi si è deciso di utilizzare le chiavi composte.  L'utilizzo delle chiavi composte è frequente nei casi in cui si devono utilizzare più valori composti per rappresentare una chiave, ma anche per definire un metodo ``custom'' per stampare un oggetto o per definire un nuovo metodo di ordinamento non standard (ad esempio, non alfanumerico). Questa tecnica consiste nel definire una propria implementazione dell'oggetto WritableComparable, in cui si deve implementare un override dei metodi sopracitati in modo da rappresentare il comportamento desiderato. Può sembrare un po' macchinoso a livello implementativo, però si ottiene molta chiarezza di codice e un buono speedup rispetto all'utilizzo di stringhe semplici come chiavi, in quanto si riesce a customizzare l'oggetto in modo da ridurre al minimo le operazioni del Mapper e del Reducer. Come si può notare, con questo metodo si sfruttano le potenzialità degli oggetti Java per gestire al meglio il parallelismo.
 
+Ogni Mapper e Reducer sono divisi in più fasi, ognuna rappresentata da una funzione specifica:
+\begin{itemize}
+\item parte di ``setup'', in cui si prepara l'esecutore ricevendo i dati;
+\item parte di ``map/reduce'', in cui si definisce cosa si deve eseguire con i dati;
+\item parte di ``cleanup'', in cui si libera spazio in base alle risorse allocate.
+\end{itemize}
+
+Questi metodi possono essere riscritti per eseguire delle operazioni in comune a tutti i Mapper o Reduce, non compromettendo l'esecuzione del codice.
+
 \section{Pig}
 
 Pig è una piattaforma per analizzare, tramite il suo linguaggio Pig Latin, grandi quantità di dati in parallelo; è un sistema molto semplice da utilizzare e da imparare, che, con le sue proprietà, permette una facile progettazione e test dell'applicazione di analisi di dati. Il linguaggio ha le seguenti proprietà:
@@ -129,11 +171,82 @@ Pig è una piattaforma per analizzare, tramite il suo linguaggio Pig Latin, gran
 
 \section{Implementazione delle Query}
 
+Le query proposte presentano diversi gradi di difficoltà, non crescente ma di natura diversa: alcune saranno incentrate su calcoli complessi ed altre sulla quantità di operazioni da eseguire. \`E stato interessante notare come alcune operazioni fossero semplicissime da rappresentare in Pig mentre risultavano molto complesse in ambito Java MapReduce e viceversa. Bisogna considerare inoltre che Java MapReduce permette controlli espliciti sulle query, quindi è risultato molto più semplice applicare i filtri di consistenza dati al Dataset mentre risultava praticamente impossibile in Pig, quindi gli output delle query si presentano leggermente differenti; da ciò si ricava una considerazione molto importante, ovvero che con Java MapReduce si ha più controllo del Dataset, quindi si possono controllare molto più facilmente delle inconsistenze di dati, cosa molto difficile con Pig.
+
 \subsection{Query 1}
+
+Questa query consiste nel trovare le linee aeree più occupate (con maggiore frequenza di utilizzo) rispetto al traffico totale di volo; inoltre bisogna dividere l'output in base alle linee di entrata, di uscita e per entrambi i casi ed ottenere i primi 20 risultati più alti. Non sono state implementate le varianti di granularità, il filtro temporale è riferito ad ogni mese.
+
+In generale, bisogna considerare tre campi del dataset: il campo ``month'', il campo ``dcode'' e il campo ``scode'', in quanto con questi si riesce ad ottenere, con un opportuno join, il traffico totale di volo; gli altri campi si possono scartare.
+
+Questa query risulta semplice da implementare su Pig mentre risulta piuttosto complessa con Java MapReduce, in quanto sembrano essere tre query differenti, che in Pig possono essere eseguite con tre operazioni differenti, invece con Java MapReduce servirebbero tre job differenti. Si è quindi adottato uno stratagemma per quest'ultimo per evitare di eseguire tre job utilizzando più memoria globale durante l'esecuzione, rimanendo comunque in ambiente parallelo e mantenendo la scalabilità.
+
+~
+
+In Pig il funzionamento della query è semplice: si carica in una variabile il file CSV tramite il comando LOAD, considerando come separatore la virgola (visto che il separatore dei campi dei file CSV è appunto la virgola), impostando le variabili e il relativo tipo in maniera ordinata rispetto alle colonne ``virtuali'' del file CSV. Fatto ciò, si crea un gruppo unificando tutte le entry secondo la variabile ``scode'' e ``dcode'', in modo che tutte le entry con scode e dcode uguali si uniscano e si incrementi il contatore di quelle entry tramite la funzione COUNT. Fatto ciò, si devono raggruppare i risultati in gruppi formati dal campo month e dcode oppure month e scode, in modo da poter contare, per ogni mese, i voli effettuati. Poi, per stampare i primi 20 voli più effettuati, si utilizza la funzione TOP che restituisce i primi 20 elementi di un gruppo, avendoli ordinati in base al count eseguiti precedentemente. Infine si stampa il risultato nell'HDFS tramite la funzione STORE. Per il traffico totale invece, si esegue il merge tra i risultati precedentemente ottenuti (salvati in variabili) tramite la costruzione di un insieme tramite l'operatore relazionale UNION, si esegue un raggruppamento per mese e codice volo e si esegue nuovamente la funzione TOP per poi salvare il risultato nell'HDFS tramite la funzione STORE.
+
+~
+
+In Java MapReduce invece risulta più complesso: si poteva eseguire questa query in diversi modi, ovvero eseguendo la query in più job sincroni, oppure fare in un unico job modificando il Group Comparator in modo da ordinare l'output in base al valore associato alle chiavi, oppure (il caso utilizzato) modificando la funzione cleanup il Reducer. Quest'ultimo caso è utilizzato spesso per eseguire delle operazioni su dati calcolati precedentemente da tutti i Mapper e Reducer, memorizzati su variabili globali; risulta sia veloce nell'implementazione sia veloce nella scrittura, a discapito però della memoria utilizzata (perché necessita di variabili globali a volte grandi). In particolare, come propone l'Ing. Andrea Iacono al \href{http://www.slideshare.net/andreaiacono/mapreduce-34478449}{seminario} JUG di Milano del 2014, è molto utile per implementare la funzione ``order by'' di SQL in ambiente MapReduce, poiché i dati, possibilmente inseriti in un hashmap, sono presenti nell'ambiente globale, già contati e quindi pronti per essere ordinati tramite un'opportuna funzione di sorting. In questo caso quindi, la modifica è stata fatta al Reducer in modo da ottenere i primi 20 voli aerei più utilizzati.
+
+Per questa query, si carica il file dall'HDFS e il sistema si occupa di passare ogni riga del file ai diversi Mapper; ogni Mapper interpreta la riga come una entry e quindi la divide in campi opportuni utilizzando la funzione ``split''; in questo modo, si crea un array di elementi ordinati che rappresentano la entry. Dopo ciò, si istanzia una variabile che estende il tipo ``WritableComparable'' in modo da rendere disponibili i dati ottenuti al Reducer; in questo caso, la variabile è stata definita, tramite l'override della funzione ``compareTo'',  in modo che si dia precedenza al tipo di volo (se è in entrata o in uscita), poi al mese e inifine al codice univoco IATA. Il Reducer riceve quindi questi oggetti che rappresentano una chiave composta, per poi incrementare il valore associato ad essi; infine, dopo aver riconosciuto il tipo di volo (se è in entrata o in uscita), viene inserito sia in un hashmap corrispondente al tipo di volo, sia all'hashmap di tutti i voli, in modo che contengano, dopo l'esecuzione di tutti i Reducer, tutti i voli. Nella funzione di cleanup, vengono ordinati tutti gli hashmap in base al valore associato alle chiavi, riordinati successivamente per mese e id tenendo soltanto i primi 20 elementi dell'hashmap. Infine vengono scritti nel context e quindi salvati nel file di output. 
+
 \subsection{Query 2}
+
+Questa query consiste nel trovare la densità, in logaritmo base 10, dei voli totali di compagnie aeree per ogni mese. Sia su Java MapReduce sia su Pig è stato facile implementarla, in quanto è un semplice conto di chiavi/valori per poi stampare il valore di ogni chiave in base logaritmica.
+
+~
+
+In Pig, bisogna caricare in una variabile il file CSV tramite il comando LOAD, considerando come separatore la virgola (visto che il separatore dei campi dei file CSV è appunto la virgola), impostando le variabili e il relativo tipo in maniera ordinata rispetto alle colonne ``virtuali'' del file CSV. Successivamente si genera un gruppo composto da mese e nome della compagnia aerea e, per ogni gruppo creato, si conta quante volte viene ripetuto, salvando in log 10 il valore tramite la funzione LOG10. Infine, si salva il risultato nell'HDFS.
+
+~
+
+In Java MapReduce, si carica il file dall'HDFS e il sistema si occupa di passare ogni riga del file ai diversi Mapper; ogni Mapper estrae i campi ``mounth'' e ``carrier'' dalla riga e, con questi, viene valorizzata la variabile che rappresenta la chiave composta, inviandola ai Reducer scrivento nel context tramite il metodo write ed assegnando 1 come valore di ogni chiave. I Reducer invece ricevono le chiavi con i relativi valori e ne ottengono la somma, per poi ottenere il numero in logaritmo in base 10 tramite il metodo della classe Math ``log10''; infine, viene scritto nel context e quindi salvato nel file di output.
+
 \subsection{Query 3}
+
+Questa query consiste nel trovare i voli che hanno un ritardo maggiore di 15 minuti; è necessario quindi implementare un semplice filtro che agisca sulla differenza tra il tempo di arrivo di un aereo e il tempo di arrivo registrato dello stesso (rispettivamente i campi ``ArrTime'' e ``CRSArrTime'') e il relativo ratio. Si è deciso di utilizzare la differenza di questi due campi e non direttamente il campo ``ArrDelay'' in quanto non è sempre valorizzato e quindi poteva portare a dei problemi di consistenza di dati aggiungendo calcolo maggiore, oltre al fatto che si potevano avere risultati sbagliati. Come granularità è stato deciso di utilizzare solo il mese.
+
+~
+
+In Pig, viene caricato il file CSV tramite la funzione LOAD e ogni entry viene salvata una variabile, si calcola il ritardo di arrivo tramite la differenza tra il tempo di arrivo e il tempo schedulato di arrivo e si raggruppa per mese e giorno del mese (in modo che per ogni mese e per ogni giorno si calcolino i ritardi complessivi) tramite l'operatore GROUP. Dopo ciò, si esegue un'iterazione sul gruppo appena creato filtrando gli elementi contenuti con un ritardo maggiore di 15; infine si genera un gruppo composto da tutti i valori, dal conto dei voli che hanno subito un ritardo e dal ratio dei voli in ritardo e dei voli complessivi e si salva il risultato nell'HDFS tramite la funzione STORE. \'E stato utilizzato il gruppo (mese, giorno del mese) in modo che, iterando su di esso, si possano avere tutti i valori ordinati correttamente, mentre i calcoli vengono eseguiti sull'insieme complessivo di voli. 
+
+~
+
+In Java MapReduce, si carica il file dall'HDFS e il sistema si occupa di inviare ogni riga del file ai diversi Mapper; ogni Mapper estrae i campi delle entry rappresentate in ogni riga e valorizza la variabile che rappresenta la chiave composta della query. La chiave composta ha i campi mese, giorno, giorno del mese e ritardo, che viene valorizzato con la differenza tra tempo di arrivo e tempo di arrivo effettivo. Una volta che i Reducer ricevono le chiavi composte, vengono sommati tutti i valori associati e, qualora per quella chiave ci fosse un delay maggiore di 15, viene incrementata la variabile che tiene traccia dei ritardi complessivi associati a quella chiave; in questo modo, si può calcolare il ratio tra i voli che hanno avuto un ritardo maggiore di 15 e i voli totali. Infine, viene scritto il risultato nel context in modo che venga salvato nel file di output nell'HDFS. Bisogna notare che i metodi ``compareTo'' ed ``equals'' controllano mese e giorno del mese, ma non il ritardo, in quanto ogni entry può avere un ritardo diverso e quindi non fa parte della chiave, è solo un valore aggiuntivo che la classe che rappresenta la chiave composta deve avere per tenerlo memorizzato. 
+
 \subsection{Query 4}
+
+Questa query è molto simile alla query precedente, in quanto chiede di trovare i voli che hanno un ritardo maggiore di 15 minuti; però ha la variante di far vedere la differenza di ritardo anche tra diverse compagnie aeree. Quindi, si può utilizzare la struttura precedente togliendo il raggruppamento per giorni e sostituendolo con il raggruppamento per compagnie aeree, usando il campo del Dataset ``carrier''.  Come granularità è stato deciso di utilizzare solo il mese.
+
+~
+
+In Pig, viene caricato il file CSV tramite la funzione LOAD e ogni entry viene salvata in una variabile, si calcola il ritardo di arrivo tramite la differenza tra il tempo di arrivo e il tempo schedulato di arrivo e si raggruppa per mese e compagnia aerea (in modo che per ogni mese e per ogni compagnia aerea si calcolino i ritardi complessivi) tramite l'operatore GROUP. Dopo ciò, si esegue un'iterazione sul gruppo appena creato filtrando gli elementi contenuti con un ritardo maggiore di 15; infine si genera un gruppo composto da tutti i valori, dal conto dei voli che hanno subito un ritardo e dal ratio dei voli in ritardo e dei voli complessivi e si salva il risultato nell'HDFS tramite la funzione STORE. \'E stato utilizzato il gruppo (mese, compagnia aerea) in modo che, iterando su di esso, si possano avere tutti i valori ordinati correttamente, mentre i calcoli vengono eseguiti sull'insieme complessivo di voli. 
+
+~
+
+In Java MapReduce, si carica il file dall'HDFS e il sistema si occupa di inviare ogni riga del file ai diversi Mapper; ogni Mapper estrae i campi delle entry rappresentate in ogni riga e valorizza la variabile che rappresenta la chiave composta della query. La chiave composta ha i campi mese, giorno, compagnia aerea e ritardo, che viene valorizzato con la differenza tra tempo di arrivo e tempo di arrivo effettivo. Una volta che i Reducer ricevono le chiavi composte, vengono sommati tutti i valori associati e, qualora per quella chiave ci fosse un delay maggiore di 15, viene incrementata la variabile che tiene traccia dei ritardi complessivi associati a quella chiave; in questo modo, si può calcolare il ratio tra i voli che hanno avuto un ritardo maggiore di 15 e i voli totali. Infine, viene scritto il risultato nel context in modo che venga salvato nel file di output nell'HDFS.  Bisogna notare che i metodi ``compareTo'' ed ``equals'' controllano mese e la compagnia aerea, ma non il ritardo, in quanto ogni entry può avere un ritardo diverso e quindi non fa parte della chiave, è solo un valore aggiuntivo che la classe che rappresenta la chiave composta deve avere per tenerlo memorizzato. 
+
+
 \subsection{Query 5}
+
+Questa query chiede di trovare quale rotta viene scelta più frequentemente; esistono due diversi approcci per implementare questa query, ovvero il metodo ``semplice'', cioè di contare ogni gruppi di volo ed ordinarli in base al numero di volte che sono stati presi, oppure il metodo più ``complesso'' che consisteva nel bilanciare il carico di lavoro in modo da distribuire più facilemente il lavoro. \'E stato scelto di implementare il metodo semplice in quanto per l'altro metodo era necessario per Pig utilizzare un programma esterno che potesse bilanciare il carico; i creatori dell'esercizio suggerivano una soluzione con un programma Java da importare in quanto Pig da solo non riuscirebbe a fare il bilanciamento, però non è sembrato opportuno ai fini del progetto in quanto si devono misurare le performance di Pig e Java MapReduce, non le varianti con Pig unito a Java MapReduce.
+
+~
+
+In Pig, viene caricato il file CSV tramite la funzione LOAD e ogni entry viene salvata in una variabile, si estraggono quindi i campi ``scode'' e ``dcode'' (nel Dataset, rispettivamente ``Origin'' e ``Dest'') in modo da ottenere i codici degli aereoporti sia in entrata che in uscita e si raggruppano in modo da ottenere la tupla (scode, dcode); infine, si contano tutti gli elementi raggruppati secondo la tupla e il risultato viene salvato nell'HDFS tramite la funzione STORE.
+
+~
+
+In Java MapReduce, si carica il file dall'HDFS e il sistema si occupa di inviare ogni riga del file ai diversi Mapper; ogni Mapper estrae i campi delle entry rappresentate in ogni riga e valorizza la variabile che rappresenta la chiave composta della query. La chiave composta ha i campi scode e dcode, in modo da memorizzare i campi ``Origin'' e ``Dest'' e poter contare le entry comuni. Una volta che i Reducer ricevono le chiavi composte, vengono semplicemente sommati tutti i valori delle chiavi in comune, per poi scrivere i risultati nel context e quindi scriverli nell'HDFS.
+
+
+\section{Confronto tra tempi}
+
+%poi vediamo
+\section{Funzioni utilizzate}
+\subsection{Pig}
+\subsection{Java MapReduce}
 
 \section{Osservazioni personali}
 

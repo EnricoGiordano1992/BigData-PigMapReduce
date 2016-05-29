@@ -201,7 +201,7 @@ IntWritable> { //output value type
 		CompositeKey obj1 = new CompositeKey();
 
 		String[] words = value.toString().split(",");
-		//mouth 1, day 2, dow 3, arrtime 6, satime 7
+		//mouth 1, day 2, dow 3, arrtime 6, crsarrtime 7
 		if(words.length > 7){
 			words[1].replaceAll("[,;\\s]", "");
 			words[2].replaceAll("[,;\\s]", "");

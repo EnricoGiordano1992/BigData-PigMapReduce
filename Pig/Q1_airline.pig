@@ -1,4 +1,3 @@
--- First, we load the raw data from a test dataset
 RAW_DATA = LOAD '/user/student/PROGETTO/INPUT/2008.csv' USING PigStorage(',') AS
 	(year: int, month: int, day: int, dow: int,
 	dtime: int, sdtime: int, arrtime: int, satime: int,
@@ -9,31 +8,6 @@ RAW_DATA = LOAD '/user/student/PROGETTO/INPUT/2008.csv' USING PigStorage(',') AS
 	tintime: int, touttime: int,
 	cancel: chararray, cancelcode: chararray, diverted: int,
 	cdelay: int, wdelay: int, ndelay: int, sdelay: int, latedelay: int);
-
-/*
-
--------------------------------------------
---  AGGREGATE OUTBOUND TRAFFIC, PER IATA AIRPORT CODE
--------------------------------------------
--- Group by the IATA code of the departure airport
-SOURCE_IATA_GROUP = GROUP RAW_DATA BY scode;
--- Count the number of flights out-bound that particular airport
-OUTBOUND_IATA_COUNT = FOREACH SOURCE_IATA_GROUP GENERATE group as IATA, COUNT(RAW_DATA) AS num_out_flights;
-
-
--------------------------------------------
--- AGGREGATE INBOUND TRAFFIC, PER IATA AIRPORT CODE
--------------------------------------------
--- Group by the IATA code of the destination airport
-DEST_IATA_GROUP = GROUP RAW_DATA BY dcode;
--- Count the number of flights in-bound that particular airport
-INBOUND_IATA_COUNT = FOREACH DEST_IATA_GROUP GENERATE group as IATA, COUNT(RAW_DATA) AS num_in_flights;
-
-
-STORE OUTBOUND_IATA_COUNT INTO '/user/student/PROGETTO/OUTPUT/2008_OUT.txt' USING PigStorage(',');
-STORE INBOUND_IATA_COUNT INTO '/user/student/PROGETTO/OUTPUT/2008_IN.txt' USING PigStorage(',');
-*/
-
 
 
 ------------------------------------------------------------
@@ -53,7 +27,6 @@ topMonthlyInbound = FOREACH GROUP_COUNT_INBOUND {
     GENERATE FLATTEN(result);
 }
 
---dump topMonthlyInbound
 STORE topMonthlyInbound INTO '/user/student/PROGETTO/OUTPUT/INBOUND-TOP' USING PigStorage(',');
 
 ------------------------------------------------------------
@@ -68,7 +41,6 @@ topMonthlyOutbound = FOREACH GROUP_COUNT_OUTBOUND {
     GENERATE FLATTEN(result);
 }
 
---dump topMonthlyOutbound
 STORE topMonthlyOutbound INTO '/user/student/PROGETTO/OUTPUT/OUTBOUND-TOP' USING PigStorage(',');
 
 

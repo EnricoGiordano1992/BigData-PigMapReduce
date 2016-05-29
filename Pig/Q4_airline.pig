@@ -1,4 +1,3 @@
--- First, we load the raw data from a test dataset
 RAW_DATA = LOAD '/user/student/PROGETTO/INPUT/2008.csv' USING PigStorage(',') AS
 	(year: int, month: int, day: int, dow: int,
 	dtime: int, sdtime: int, arrtime: int, satime: int,
@@ -10,24 +9,8 @@ RAW_DATA = LOAD '/user/student/PROGETTO/INPUT/2008.csv' USING PigStorage(',') AS
 	cancel: chararray, cancelcode: chararray, diverted: int,
 	cdelay: int, wdelay: int, ndelay: int, sdelay: int, latedelay: int);
 
--- A flight is delayed if the delay is greater than 15 minutes.
--- delay = arrival time - scheduled arrival time
--- Compute the fraction of delayed flights per different time
--- granularities (hour, day, week, month, year).
-
-
--- example: let's focus on a month
--- Foreach month:
--- compute the total number of flights
--- compute delay relation: only those filght with delay > 15 min appear here
--- compute the total number of delayed flights
--- output relation: month, ratio delayed/total
-
-
--- project, to get rid of unused fields
 A = FOREACH RAW_DATA GENERATE month AS m, carrier, (int)(arrtime-satime) AS delay;
 
--- group by carrier
 B = GROUP A BY carrier;
 
 COUNT_TOTAL = FOREACH B {
