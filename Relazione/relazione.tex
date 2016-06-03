@@ -53,6 +53,13 @@
 \usepackage{graphicx} 
 \usepackage[labelformat=empty]{caption}
 \usepackage{pstricks}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\algnewcommand\algorithmicforeach{\textbf{for each}}
+\algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
 
 %%% END Article customizations
 
@@ -181,9 +188,79 @@ In generale, bisogna considerare tre campi del dataset: il campo ``month'', il c
 
 Questa query risulta semplice da implementare su Pig mentre risulta piuttosto complessa con Java MapReduce, in quanto sembrano essere tre query differenti, che in Pig possono essere eseguite con tre operazioni differenti, invece con Java MapReduce servirebbero tre job differenti. Si è quindi adottato uno stratagemma per quest'ultimo per evitare di eseguire tre job utilizzando più memoria globale durante l'esecuzione, rimanendo comunque in ambiente parallelo e mantenendo la scalabilità.
 
+In pseudocodice, la query potrebbe essere concepita in questo modo:
+
+\begin{algorithm}
+\caption{Query 1}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $inboundFlights \gets all data.Month, data.Dest$
+\ForEach {$flight \in inboundFlights$ }
+\State $numInboundFlights \gets numInboundFlights+1$
+\EndFor
+\State $resultInboundFlights \gets \text{TOP(20) of }inboundFlights \text{ with MAX(\textit{numInboundFlights})}$
+
+\State $totalResult \gets numInboundFlights$
+
+\State $outboundFlights \gets all data.Month, data.Origin$
+\ForEach {$flight \in outboundFlights$ }
+\State $numOutboundFlights \gets numOutboundFlights+1$
+\EndFor
+\State $resultOutboundFlights \gets \text{TOP(20) of }outboundFlights \text{ with MAX(\textit{numOutboundFlights})}$
+
+\State $totalResult \gets numOutboundFlights$
+
+\ForEach {$flight \in totalResult$ }
+\State $numTotalFlights \gets numTotalFlights+1$
+\EndFor
+\State $resultTotalFlights \gets \text{TOP(20) of }totalFlights \text{ with MAX(\textit{numTotalFlights})}$
+
+\end{algorithmic}
+\end{algorithm}
+
 ~
 
 In Pig il funzionamento della query è semplice: si carica in una variabile il file CSV tramite il comando LOAD, considerando come separatore la virgola (visto che il separatore dei campi dei file CSV è appunto la virgola), impostando le variabili e il relativo tipo in maniera ordinata rispetto alle colonne ``virtuali'' del file CSV. Fatto ciò, si crea un gruppo unificando tutte le entry secondo la variabile ``scode'' e ``dcode'', in modo che tutte le entry con scode e dcode uguali si uniscano e si incrementi il contatore di quelle entry tramite la funzione COUNT. Fatto ciò, si devono raggruppare i risultati in gruppi formati dal campo month e dcode oppure month e scode, in modo da poter contare, per ogni mese, i voli effettuati. Poi, per stampare i primi 20 voli più effettuati, si utilizza la funzione TOP che restituisce i primi 20 elementi di un gruppo, avendoli ordinati in base al count eseguiti precedentemente. Infine si stampa il risultato nell'HDFS tramite la funzione STORE. Per il traffico totale invece, si esegue il merge tra i risultati precedentemente ottenuti (salvati in variabili) tramite la costruzione di un insieme tramite l'operatore relazionale UNION, si esegue un raggruppamento per mese e codice volo e si esegue nuovamente la funzione TOP per poi salvare il risultato nell'HDFS tramite la funzione STORE.
+
+In pseudocodice, si potrebbe descrivere in questo modo (si può notare che è molto simile allo pseudocodice descritto precedentemente):
+
+\begin{algorithm}
+\caption{Query 1 Pig}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $inboundFlights \gets all data.Month, data.Dest$
+\State $inboundFlightsGroup \gets \text{GROUP inboundFlights(Month, Dest)}$
+\ForEach {$flight \in inboundFlights$ }
+\State $flight.numInboundFlights \gets numInboundFlights+1$
+\EndFor
+\State $groupNumInboundFlights \gets \text{GROUP numInboundFlights(Month)}$
+\State $resultInboundFlights \gets \text{TOP(20) of }inboundFlights \text{ with MAX(\textit{numInboundFlights})}$
+\State $\text{HDFS}\gets resultInboundFlights$
+
+~
+
+\State $outboundFlights \gets all data.Month, data.Dest$
+\State $outboundFlightsGroup \gets \text{GROUP inboundFlights(Month, Origin)}$
+\ForEach {$flight \in outboundFlights$ }
+\State $flight.numOutboundFlights \gets numOutboundFlights+1$
+\EndFor
+\State $groupNumOutboundFlights \gets \text{GROUP numOutboundFlights(Month)}$
+\State $resultOutboundFlights \gets \text{TOP(20) of }outboundFlights \text{ with MAX(\textit{numOutboundFlights})}$
+\State $\text{HDFS}\gets resultOutboundFlights$
+
+~
+
+\State $globalTraffic \gets \text{UNION } numInboundFlights, numOutboundFlights$
+\State $groupGlobalTraffic \gets \text{GROUP}globalTraffic(Month, Dest)$
+\ForEach {$flight \in totalResult$ }
+\State $flight.numTotalFlights \gets numInboundFlights+ numOutboundFlights$
+\EndFor
+\State $resultTotalFlights \gets \text{TOP(20) of }totalFlights \text{ with MAX(\textit{numTotalFlights})}$
+\State $\text{HDFS}\gets resultTotalboundFlights$
+
+\end{algorithmic}
+\end{algorithm}
+
 
 ~
 
@@ -191,65 +268,411 @@ In Java MapReduce invece risulta più complesso: si poteva eseguire questa query
 
 Per questa query, si carica il file dall'HDFS e il sistema si occupa di passare ogni riga del file ai diversi Mapper; ogni Mapper interpreta la riga come una entry e quindi la divide in campi opportuni utilizzando la funzione ``split''; in questo modo, si crea un array di elementi ordinati che rappresentano la entry. Dopo ciò, si istanzia una variabile che estende il tipo ``WritableComparable'' in modo da rendere disponibili i dati ottenuti al Reducer; in questo caso, la variabile è stata definita, tramite l'override della funzione ``compareTo'',  in modo che si dia precedenza al tipo di volo (se è in entrata o in uscita), poi al mese e inifine al codice univoco IATA. Il Reducer riceve quindi questi oggetti che rappresentano una chiave composta, per poi incrementare il valore associato ad essi; infine, dopo aver riconosciuto il tipo di volo (se è in entrata o in uscita), viene inserito sia in un hashmap corrispondente al tipo di volo, sia all'hashmap di tutti i voli, in modo che contengano, dopo l'esecuzione di tutti i Reducer, tutti i voli. Nella funzione di cleanup, vengono ordinati tutti gli hashmap in base al valore associato alle chiavi, riordinati successivamente per mese e id tenendo soltanto i primi 20 elementi dell'hashmap. Infine vengono scritti nel context e quindi salvati nel file di output. 
 
+In pseudocodice, si potrebbe descrivere in questo modo:
+
+\newpage 
+
+\begin{algorithm}
+\caption{Query 1 Java MapReduce}\label{euclid}
+\begin{algorithmic}[0]
+
+\Procedure{Map}{key, value, context}
+
+\State $entry \gets value.plit(',')$
+\State $\text{check\_if\_data\_is\_consistent(entry)}$
+\State $inboudCompositeKey \gets entry(Month, Origin)$
+\State $outboudCompositeKey \gets entry(Month, Dest)$
+\State $\text{context.write(inboundCompositeKey, 1)}$
+\State $\text{context.write(outboundCompositeKey, 1)}$
+
+\EndProcedure
+
+~
+
+\Procedure{Reduce}{compositeKey, values, context}
+
+\ForEach{$value \in values$ }
+	\State $valueSum \gets valueSum + value$
+\EndFor
+
+\If{compositeKey.type is INBOUND}
+	\State $inboundHash \gets (compositeKey, valueSum)$
+\Else
+	\State $outboundHash \gets (compositeKey, valueSum)$
+\EndIf
+
+\State $totalFlightsHash \gets (compositeKey, valueSum)$
+
+\EndProcedure 
+
+\Procedure{Reduce cleanup}{context}
+
+\State $\text{inboundHash.sortByValues()}$
+\State $\text{inboundHash.takeFirst20()}$
+\State $\text{inboundHash.sortByMonth()}$
+
+\State $\text{outboundHash.sortByValues()}$
+\State $\text{outboundHash.takeFirst20()}$
+\State $\text{outboundHash.sortByMonth()}$
+
+\State $\text{totalFlightsHash.sortByValues()}$
+\State $\text{totalFlightsHash.takeFirst20()}$
+\State $\text{totalFlightsHash.sortByMonth()}$
+
+\State $\text{writeAllInHDFS()}$
+
+\EndProcedure
+
+
+\end{algorithmic}
+\end{algorithm}
+
 \subsection{Query 2}
 
 Questa query consiste nel trovare la densità, in logaritmo base 10, dei voli totali di compagnie aeree per ogni mese. Sia su Java MapReduce sia su Pig è stato facile implementarla, in quanto è un semplice conto di chiavi/valori per poi stampare il valore di ogni chiave in base logaritmica.
+
+In pseudocodice, la query potrebbe essere concepita in questo modo:
+
+\begin{algorithm}
+\caption{Query 2}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $AllCarriers \gets all data.Month, data.UniqueCarrier$
+\ForEach {$carrier \in AllCarriers$ }
+\State $numCarrier \gets numCarrier + 1$
+\State $numCarrierLog10 \gets float2Log10(numCarrier)$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
 ~
 
 In Pig, bisogna caricare in una variabile il file CSV tramite il comando LOAD, considerando come separatore la virgola (visto che il separatore dei campi dei file CSV è appunto la virgola), impostando le variabili e il relativo tipo in maniera ordinata rispetto alle colonne ``virtuali'' del file CSV. Successivamente si genera un gruppo composto da mese e nome della compagnia aerea e, per ogni gruppo creato, si conta quante volte viene ripetuto, salvando in log 10 il valore tramite la funzione LOG10. Infine, si salva il risultato nell'HDFS.
 
+In pseudocodice, si può rappresentare l'algoritmo in questo modo:
+
+\begin{algorithm}
+\caption{Query 2 Pig}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $AllCarriers \gets all data.Month, data.UniqueCarrier$
+\State $GroupCarriers \gets (AllCarriers.Month, AllCarriers.UniqueCarrier)$
+\ForEach {$carrier \in AllCarriers$ }
+	\State $numCarrier \gets \text{LOG10(COUNT(carrier))}$
+\EndFor
+\State $\text{HDFS}\gets numCarrier$
+\end{algorithmic}
+\end{algorithm}
+
 ~
 
 In Java MapReduce, si carica il file dall'HDFS e il sistema si occupa di passare ogni riga del file ai diversi Mapper; ogni Mapper estrae i campi ``mounth'' e ``carrier'' dalla riga e, con questi, viene valorizzata la variabile che rappresenta la chiave composta, inviandola ai Reducer scrivento nel context tramite il metodo write ed assegnando 1 come valore di ogni chiave. I Reducer invece ricevono le chiavi con i relativi valori e ne ottengono la somma, per poi ottenere il numero in logaritmo in base 10 tramite il metodo della classe Math ``log10''; infine, viene scritto nel context e quindi salvato nel file di output.
+
+In pseudocodice, si può rappresentare l'algoritmo in questo modo:
+
+\newpage
+
+\begin{algorithm}
+\caption{Query 2 Java MapReduce}\label{euclid}
+\begin{algorithmic}[0]
+
+\Procedure{Map}{key, value, context}
+
+\State $entry \gets value.plit(',')$
+\State $\text{check\_if\_data\_is\_consistent(entry)}$
+\State $carrierCompositeKey \gets entry(Month, UniqueCarrier)$
+\State $\text{context.write(carrierCompositeKey, 1)}$
+
+\EndProcedure
+
+~
+
+\Procedure{Reduce}{compositeKey, values, context}
+
+\ForEach{$value \in values$ }
+	\State $valueSum \gets valueSum + value$
+\EndFor
+
+\State $result \gets float2Log10(valueSum)$
+\State $\text{context.write(compositeKey.toString(), result)}$
+
+\EndProcedure
+
+
+\end{algorithmic}
+\end{algorithm}
+
 
 \subsection{Query 3}
 
 Questa query consiste nel trovare i voli che hanno un ritardo maggiore di 15 minuti; è necessario quindi implementare un semplice filtro che agisca sulla differenza tra il tempo di arrivo di un aereo e il tempo di arrivo registrato dello stesso (rispettivamente i campi ``ArrTime'' e ``CRSArrTime'') e il relativo ratio. Si è deciso di utilizzare la differenza di questi due campi e non direttamente il campo ``ArrDelay'' in quanto non è sempre valorizzato e quindi poteva portare a dei problemi di consistenza di dati aggiungendo calcolo maggiore, oltre al fatto che si potevano avere risultati sbagliati. Come granularità è stato deciso di utilizzare solo il mese.
 
+In pseudocodice, la query potrebbe essere concepita in questo modo:
+
+\begin{algorithm}
+\caption{Query 3}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $AllFlights \gets \text{all } data.DayOfMonth, data.DayOfWeek, data.Delay$
+\ForEach {$flight \in AllFlights$ }
+\State $results \gets flight \text{ with delay } \geqslant 15$
+\State $resultRatio \gets \frac{results}{AllFlights}$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+
 ~
 
 In Pig, viene caricato il file CSV tramite la funzione LOAD e ogni entry viene salvata una variabile, si calcola il ritardo di arrivo tramite la differenza tra il tempo di arrivo e il tempo schedulato di arrivo e si raggruppa per mese e giorno del mese (in modo che per ogni mese e per ogni giorno si calcolino i ritardi complessivi) tramite l'operatore GROUP. Dopo ciò, si esegue un'iterazione sul gruppo appena creato filtrando gli elementi contenuti con un ritardo maggiore di 15; infine si genera un gruppo composto da tutti i valori, dal conto dei voli che hanno subito un ritardo e dal ratio dei voli in ritardo e dei voli complessivi e si salva il risultato nell'HDFS tramite la funzione STORE. \'E stato utilizzato il gruppo (mese, giorno del mese) in modo che, iterando su di esso, si possano avere tutti i valori ordinati correttamente, mentre i calcoli vengono eseguiti sull'insieme complessivo di voli. 
+
+In pseudocodice, la query potrebbe essere implementata in questo modo:
+
+\begin{algorithm}
+\caption{Query 3 Pig}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $AllFlights \gets \text{all } (data.DayOfMonth, data.DayOfWeek, data.ArrTime - data.CRSArrTime)$
+\State $GroupAllFlights \gets (AllFlights.Month, AllFlights.DayOfWeek$
+\ForEach {$flight \in GroupAllFlights$ }
+	\State $results \gets \text{COUNT(flight) with delay }  \geqslant 15, \text{COUNT(AllFlights) }$
+	\State $resultRatio \gets \frac{results}{AllFlights}$
+\EndFor
+\State $\text{HDFS}\gets results, resultRatio$
+\end{algorithmic}
+\end{algorithm}
 
 ~
 
 In Java MapReduce, si carica il file dall'HDFS e il sistema si occupa di inviare ogni riga del file ai diversi Mapper; ogni Mapper estrae i campi delle entry rappresentate in ogni riga e valorizza la variabile che rappresenta la chiave composta della query. La chiave composta ha i campi mese, giorno, giorno del mese e ritardo, che viene valorizzato con la differenza tra tempo di arrivo e tempo di arrivo effettivo. Una volta che i Reducer ricevono le chiavi composte, vengono sommati tutti i valori associati e, qualora per quella chiave ci fosse un delay maggiore di 15, viene incrementata la variabile che tiene traccia dei ritardi complessivi associati a quella chiave; in questo modo, si può calcolare il ratio tra i voli che hanno avuto un ritardo maggiore di 15 e i voli totali. Infine, viene scritto il risultato nel context in modo che venga salvato nel file di output nell'HDFS. Bisogna notare che i metodi ``compareTo'' ed ``equals'' controllano mese e giorno del mese, ma non il ritardo, in quanto ogni entry può avere un ritardo diverso e quindi non fa parte della chiave, è solo un valore aggiuntivo che la classe che rappresenta la chiave composta deve avere per tenerlo memorizzato. 
 
+In pseudocodice, si può implementare l'algoritmo in questo modo:
+
+\newpage 
+
+\begin{algorithm}
+\caption{Query 3 Java MapReduce}\label{euclid}
+\begin{algorithmic}[0]
+
+\Procedure{Map}{key, value, context}
+
+\State $entry \gets value.plit(',')$
+\State $\text{check\_if\_data\_is\_consistent(entry)}$
+\State $carrierCompositeKey \gets entry(Month, DayOfMonth, DayOfWeek, ArrTime - CRSArrTime)$
+\State $\text{context.write(carrierCompositeKey, 1)}$
+
+\EndProcedure
+
+~
+
+\Procedure{Reduce}{compositeKey, values, context}
+
+\ForEach{$value \in values$ }
+	\State $valueSum \gets valueSum + value$
+	\If{$compositeKey.delay \geqslant 15$}
+		\State $delayedSum + delayedSum + value$
+	\EndIf
+\EndFor
+
+\State $resultRatio = \frac{delayedSum}{valueSum}$
+
+\State $\text{context.write(compositeKey.toString(), result)}$
+
+\EndProcedure
+
+
+\end{algorithmic}
+\end{algorithm}
+
 \subsection{Query 4}
 
 Questa query è molto simile alla query precedente, in quanto chiede di trovare i voli che hanno un ritardo maggiore di 15 minuti; però ha la variante di far vedere la differenza di ritardo anche tra diverse compagnie aeree. Quindi, si può utilizzare la struttura precedente togliendo il raggruppamento per giorni e sostituendolo con il raggruppamento per compagnie aeree, usando il campo del Dataset ``carrier''.  Come granularità è stato deciso di utilizzare solo il mese.
+
+In pseudocodice, la query potrebbe essere concepita in questo modo:
+
+\begin{algorithm}
+\caption{Query 4}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $AllFlights \gets \text{all } data.Month, data.Carrier, data.Delay$
+\ForEach {$flight \in AllFlights$ }
+\State $results \gets flight \text{ with delay } \geqslant 15$
+\State $resultRatio \gets \frac{results}{AllFlights}$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
 ~
 
 In Pig, viene caricato il file CSV tramite la funzione LOAD e ogni entry viene salvata in una variabile, si calcola il ritardo di arrivo tramite la differenza tra il tempo di arrivo e il tempo schedulato di arrivo e si raggruppa per mese e compagnia aerea (in modo che per ogni mese e per ogni compagnia aerea si calcolino i ritardi complessivi) tramite l'operatore GROUP. Dopo ciò, si esegue un'iterazione sul gruppo appena creato filtrando gli elementi contenuti con un ritardo maggiore di 15; infine si genera un gruppo composto da tutti i valori, dal conto dei voli che hanno subito un ritardo e dal ratio dei voli in ritardo e dei voli complessivi e si salva il risultato nell'HDFS tramite la funzione STORE. \'E stato utilizzato il gruppo (mese, compagnia aerea) in modo che, iterando su di esso, si possano avere tutti i valori ordinati correttamente, mentre i calcoli vengono eseguiti sull'insieme complessivo di voli. 
 
+In Pig, la query potrebbe essere implementata in questo modo:
+
+\begin{algorithm}
+\caption{Query 4 Pig}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $AllFlights \gets \text{all } (data.Month, data.Carrier, data.ArrTime - data.CRSArrTime)$
+\State $GroupAllFlights \gets (AllFlights.Month, AllFlights.DayOfWeek$
+\ForEach {$flight \in GroupAllFlights$ }
+	\State $results \gets \text{COUNT(flight) with delay }  \geqslant 15, \text{COUNT(AllFlights) }$
+	\State $resultRatio \gets \frac{results}{AllFlights}$
+\EndFor
+\State $\text{HDFS}\gets results, resultRatio$
+\end{algorithmic}
+\end{algorithm}
+
 ~
 
 In Java MapReduce, si carica il file dall'HDFS e il sistema si occupa di inviare ogni riga del file ai diversi Mapper; ogni Mapper estrae i campi delle entry rappresentate in ogni riga e valorizza la variabile che rappresenta la chiave composta della query. La chiave composta ha i campi mese, giorno, compagnia aerea e ritardo, che viene valorizzato con la differenza tra tempo di arrivo e tempo di arrivo effettivo. Una volta che i Reducer ricevono le chiavi composte, vengono sommati tutti i valori associati e, qualora per quella chiave ci fosse un delay maggiore di 15, viene incrementata la variabile che tiene traccia dei ritardi complessivi associati a quella chiave; in questo modo, si può calcolare il ratio tra i voli che hanno avuto un ritardo maggiore di 15 e i voli totali. Infine, viene scritto il risultato nel context in modo che venga salvato nel file di output nell'HDFS.  Bisogna notare che i metodi ``compareTo'' ed ``equals'' controllano mese e la compagnia aerea, ma non il ritardo, in quanto ogni entry può avere un ritardo diverso e quindi non fa parte della chiave, è solo un valore aggiuntivo che la classe che rappresenta la chiave composta deve avere per tenerlo memorizzato. 
+
+In Java MapReduce, si può implementare l'algoritmo in questo modo:
+
+\newpage
+
+\begin{algorithm}
+\caption{Query 4 Java MapReduce}\label{euclid}
+\begin{algorithmic}[0]
+
+\Procedure{Map}{key, value, context}
+
+\State $entry \gets value.plit(',')$
+\State $\text{check\_if\_data\_is\_consistent(entry)}$
+\State $carrierCompositeKey \gets entry(Month, Carrier, ArrTime - CRSArrTime)$
+\State $\text{context.write(carrierCompositeKey, 1)}$
+
+\EndProcedure
+
+~
+
+\Procedure{Reduce}{compositeKey, values, context}
+
+\ForEach{$value \in values$ }
+	\State $valueSum \gets valueSum + value$
+	\If{$compositeKey.delay \geqslant 15$}
+		\State $delayedSum + delayedSum + value$
+	\EndIf
+\EndFor
+
+\State $resultRatio = \frac{delayedSum}{valueSum}$
+
+\State $\text{context.write(compositeKey.toString(), result)}$
+
+\EndProcedure
+
+
+\end{algorithmic}
+\end{algorithm}
 
 
 \subsection{Query 5}
 
 Questa query chiede di trovare quale rotta viene scelta più frequentemente; esistono due diversi approcci per implementare questa query, ovvero il metodo ``semplice'', cioè di contare ogni gruppi di volo ed ordinarli in base al numero di volte che sono stati presi, oppure il metodo più ``complesso'' che consisteva nel bilanciare il carico di lavoro in modo da distribuire più facilemente il lavoro. \'E stato scelto di implementare il metodo semplice in quanto per l'altro metodo era necessario per Pig utilizzare un programma esterno che potesse bilanciare il carico; i creatori dell'esercizio suggerivano una soluzione con un programma Java da importare in quanto Pig da solo non riuscirebbe a fare il bilanciamento, però non è sembrato opportuno ai fini del progetto in quanto si devono misurare le performance di Pig e Java MapReduce, non le varianti con Pig unito a Java MapReduce.
 
+In pseudocodice, la query potrebbe essere concepita in questo modo:
+
+\begin{algorithm}
+\caption{Query 5}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $AllFlights \gets \text{all } data.Origin, data.Dest$
+\ForEach {$flight \in AllFlights$ }
+\State $results \gets results + 1$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
 ~
 
 In Pig, viene caricato il file CSV tramite la funzione LOAD e ogni entry viene salvata in una variabile, si estraggono quindi i campi ``scode'' e ``dcode'' (nel Dataset, rispettivamente ``Origin'' e ``Dest'') in modo da ottenere i codici degli aereoporti sia in entrata che in uscita e si raggruppano in modo da ottenere la tupla (scode, dcode); infine, si contano tutti gli elementi raggruppati secondo la tupla e il risultato viene salvato nell'HDFS tramite la funzione STORE.
+
+In pseudocodice, la query potrebbe essere implementata in questo modo:
+
+\begin{algorithm}
+\caption{Query 5 Pig}\label{euclid}
+\begin{algorithmic}[0]
+\State $data \gets contentFile$
+\State $AllFlights \gets \text{all } (data.Origin, data.Dest)$
+\State $GroupAllFlights \gets (AllFlights.Origin, AllFlights.Dest$
+\ForEach {$flight \in GroupAllFlights$ }
+	\State $results \gets results + 1$
+\EndFor
+\State $\text{HDFS}\gets results$
+\end{algorithmic}
+\end{algorithm}
 
 ~
 
 In Java MapReduce, si carica il file dall'HDFS e il sistema si occupa di inviare ogni riga del file ai diversi Mapper; ogni Mapper estrae i campi delle entry rappresentate in ogni riga e valorizza la variabile che rappresenta la chiave composta della query. La chiave composta ha i campi scode e dcode, in modo da memorizzare i campi ``Origin'' e ``Dest'' e poter contare le entry comuni. Una volta che i Reducer ricevono le chiavi composte, vengono semplicemente sommati tutti i valori delle chiavi in comune, per poi scrivere i risultati nel context e quindi scriverli nell'HDFS.
 
+In Java MapReduce, si può implementare l'algoritmo in questo modo:
+
+
+\begin{algorithm}
+\caption{Query 5 Java MapReduce}\label{euclid}
+\begin{algorithmic}[0]
+
+\Procedure{Map}{key, value, context}
+
+\State $entry \gets value.plit(',')$
+\State $\text{check\_if\_data\_is\_consistent(entry)}$
+\State $carrierCompositeKey \gets entry(Origin, Dest)$
+\State $\text{context.write(carrierCompositeKey, 1)}$
+
+\EndProcedure
+
+~
+
+\Procedure{Reduce}{compositeKey, values, context}
+
+\ForEach{$value \in values$ }
+	\State $valueSum \gets valueSum + value$
+\EndFor
+
+\State $\text{context.write(compositeKey.toString(), valueSum)}$
+
+\EndProcedure
+
+
+\end{algorithmic}
+\end{algorithm}
+
 
 \section{Confronto tra tempi}
 
-%poi vediamo
-\section{Funzioni utilizzate}
-\subsection{Pig}
-\subsection{Java MapReduce}
 
 \section{Osservazioni personali}
 
-More text.
+Una differenza sostanziale tra i due sistemi si nota sui tempi di sviluppo. Per le query in Pig, ci sono volute poche ore per implementare le 5 query (circa 12 ore) e poco tempo per testare il tutto; questo perché Pig è stato concepito per sviluppare velocemente calcolo distribuito. Per la parte in Java MapReduce invece, ci sono voluti molti giorni (circa 6 giorni), soprattutto per la prima query in quanto era necessario adottare dei meccanismi non banali, oltre a delle competenze avanzate sulla conoscenza e ridefinizione del sistema. Quindi, dal punto di vista delle tempistiche di progettazione, risulta migliore Pig.
+
+~
+
+Il codice inoltre risulta molto più leggibile il codice di Pig, in quanto è molto comprensibile (anche nella scelta dei nomi delle funzioni) e più ordinato, poiché si scrive solo il procedimento da eseguire per effettuare una query; in Java MapReduce invece risulta meno leggibile in quanto è presente molto più codice e si devono definire, oltre alla procedura delle query, il codice che configura tutto il sistema.
+
+~
+
+\'E stata più facile anche la soluzione di bug in Pig, in quanto è molto più chiaro il codice e quindi più facili da debuggare.
+
+~
+
+Infine, la progettazione è più facile in Pig in quanto la progettazione è più intuitiva, non necessita di particolari competenze e non bisogna ragionare come fosse un codice parallelo, ma come fosse codice MySQL. Invece in Java MapReduce bisogna ragionare in modo diverso, in quanto è necessario capire come si comportano Mapper e Reducer e quali tipi di dati devono inviarsi.
+
+~
+
+A favore di Java MapReduce invece si può parlare di maggiore controllo sia di progettazione sia di efficienza, in quanto è possibile definire filtri e regole di query molto più precise rispetto a Pig, soprattutto per il controllo del codice. Sviluppando infatti in Java, si possono sfruttare le capacità di programmazione di quest'ultimo per creare codice molto più efficiente, che per queste query non si nota per la durata computazionale, ma si nota sul risultato di output, che risulta molto più preciso di Pig. Pig esegue infatti una semplice analisi di ogni riga per estrapolare il contenuto interessato, invece con Java si riesce a lavorare molto più facilmente con ogni campo delle entry trattandole come stringhe e poi come oggetti nel caso delle chiavi composte.
+
+~
+
+Pig inoltre dovrebbe rendere più performante il codice in maniera automatica utilizzando un'analisi semantica del codice, in modo da concentrarsi sul risultato finale e non sul modo in cui ottenerlo, però per query complesse è molto più utile ragionare sul metodo con cui si ottengono i risultati, poichè il risultato può sempre essere raffinato in un secondo momento.
+
+~
+ 
+Per sopperire ad alcune mancanze di Pig, si possono comunque usare le UDF (User Defined Functions) o programmi esterni, che vanno incontro a tutti i problemi progettuali che si possono riscontrare in Pig, però è buona norma non abusarne, poichè questo sistema esegue ottimizzazioni sul codice scritto nel suo linguaggio, ma non su programmi importati esternamente, quindi si possono creare problemi di spreco di risorse e quindi si può peggiorare o addirittura perdere l'efficienza di Pig.
+
+~
+
+Un altro problema che differenzia Pig da Java MapReduce è la compilazione e le dipendenze: Pig risulta molto più portabile e mantenibile in questo senso rispetto a Java MapReduce in quanto non necessita di compilazione o di una versione particolare che necessita di soddisfacimento di dipendenze, al contrario di Java. Per sviluppare in Java MapReduce bisogna mantenere l'ambiente di compilazione sempre aggiornato, anche per utilizzare nuove forme di programmazione che possono migliorare la programmazione e velocizzare il codice, senza ricompilare tutto e generare nuovamente il file Jar.
+
+
 
 \end{document}
