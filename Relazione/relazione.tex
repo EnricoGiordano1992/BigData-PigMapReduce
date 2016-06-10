@@ -104,7 +104,7 @@ Per confrontare questi due sistemi, è stato scelto di implementare le query pro
 
 Il formato CSV (comma-separated values) permette di descrivere una entry del proprio dataset organizzandola in colonne: la prima riga descrive i nomi dei campi, separati da virgola, mentre le successive rappresentano le entry, i cui campi sono ordinari rispetto alla prima riga e separati da virgola. Ogni entry termina con un carattere ``newline'', organizzando quindi il Dataset in righe e colonne. Il formato CSV è largamente utilizzato in questo ambito in quanto permette una formattazione facile da parserizzare facilitando l'analisi dei dati; infatti, utilizzando una qualsiasi funzione di parsing o di tokenize, si riesce ad ottenere ogni campo di una entry come se fosse organizzato il tutto in una matrice (o in un vettore se si analizza ogni singola riga).
 
-Analizzando questi file però, si può notare che non tutte le loro righe rispettano una formattazione omogenea per rappresentare i tipi di dati, ovvero non è gestito il campo vuoto (a volte si presenta vuoto, altre presenta il valore NULL), oppure sono presenti caratteri speciali,o altrimenti dopo la virgola separatrice è presente uno spazio (invalidando quindi i confronti semplici tra stringhe), oppure alcune righe non rispettano la formattazione in base alle colonne; questo fatto è di notevole importanza perché, in base al sistema utilizzato, si possono avere diversi risultati, in quanto è necessario applicare filtri in maniera più approfondita per ogni riga (ma non sempre il sistema permette di applicare questi filtri e avrebbe bisogno di ausili esterni). Inoltre, le query cercano di sfruttare i ``gruppi'' e le ``chiavi composte'' (ovvero si devono contare insiemi di oggetti con proprietà comuni): questo perché sono query orientate all'utilizzo di Pig, che permette di raggruppare dati in insiemi con proprietà comuni, quindi è stato necessario sfruttare un approccio diverso per l'ambiente MapReduce, non utilizzando la semplice lettura di una chiave associandoci un valore, ma utilizzando le ``Composite Key'', che verranno descritte nelle prossime sezioni.
+Analizzando questi file però, si può notare che non tutte le loro righe rispettano una formattazione omogenea per rappresentare i tipi di dati, ovvero non è gestito il campo vuoto (a volte si presenta vuoto, altre presenta il valore NULL), oppure sono presenti caratteri speciali, o altrimenti dopo la virgola separatrice è presente uno spazio (invalidando quindi i confronti semplici tra stringhe), oppure alcune righe non rispettano la formattazione in base alle colonne; questo fatto è di notevole importanza perché, in base al sistema utilizzato, si possono avere diversi risultati, in quanto è necessario applicare filtri in maniera più approfondita per ogni riga (ma non sempre il sistema permette di applicare questi filtri e avrebbe bisogno di ausili esterni). Inoltre, le query cercano di sfruttare i ``gruppi'' e le ``chiavi composte'' (ovvero si devono contare insiemi di oggetti con proprietà comuni): questo perché sono query orientate all'utilizzo di Pig, che permette di raggruppare dati in insiemi con proprietà comuni, quindi è stato necessario sfruttare un approccio diverso per l'ambiente MapReduce, non utilizzando la semplice lettura di una chiave associandoci un valore, ma utilizzando le ``Composite Key'', che verranno descritte nelle prossime sezioni.
 
 Il Dataset ha i seguenti campi:
 \begin{itemize}
@@ -142,6 +142,12 @@ Il Dataset ha i seguenti campi:
 
 \section{Java MapReduce}
 
+\begin{figure}[!ht]
+  \caption{Architettura di Java MapReduce.}
+  \centering
+    \includegraphics[scale=0.6]{hadoop_mapreduce.png}
+\end{figure}
+
 Java MapReduce è un framework Java che permette di analizzate grandi quantità di dati in parallelo; essendo basato su Java necessita di una JVM a cui viene affiancato un core Hadoop. Da questo framework si ottiene un codice eseguibile che si interfaccia col sistema Hadoop ed interagisce con l'HDFS centrale tramite Hadoop. Il sistema è quindi parallelo e fault-tolerant, permette di suddividere il lavoro in maniera organizzata tra i diversi esecutori dei task. Ogni esecuzione di MapReduce viene chiamata ``job'', che consiste nella divisione dell'analisi del Dataset in due diversi ``esecutori'': il Mapper e il Reducer. Il Mapper ha il compito di estrapolare da ogni entry del Dataset le informazioni utili da filtrare ed organizzarle nella maniera più consona al task da eseguire; il Reducer deve ricevere i dati raggruppati e generare l'output contando le entry con chiave uguale. La generazione delle chiavi e dei valori, il relativo invio al sistema e il parallelismo della gestione dei singoli componenti del sistema è trasparente al progettista, in quanto deve solo definire il campo della entry che si vuole contare e il relativo ``peso'' (il valore associato a quella singola chiave), mentre il sistema genera l'oggetto chiave/valore e organizza tutto il lavoro da distribuire tra i diversi Mapper e Reducer.  Questi comunicano con oggetti di tipo ``WritableComparable'', che sono resi disponibili nel context del sistema tramite il metodo send, che invia tramite questi oggetti la chiave e il relativo valore. Questo oggetto è composto dalle seguenti proprietà:
 \begin{itemize}
 \item  un costruttore; 
@@ -173,7 +179,14 @@ Pig è una piattaforma per analizzare, tramite il suo linguaggio Pig Latin, gran
 \item permette l'estendibilità, ovvero si possono definire proprie funzioni e si possono importare eseguibili o codici di altri linguaggi per customizzare le query.
 \end{itemize}
 
- \`E una piattaforma ad alto livello di MapReduce, ovvero il progettista deve solo preoccuparsi di creare correttamente la query nel linguaggio di Pig, mentre Pig gestisce tutta la parte di MapReduce (quindi tutto il comportamento dei Mapper e dei Reducer). Il sistema lavora con un oggetto particolare chiamato ``bag'', che consiste in un insieme di valori di un certo tipo; solitamente ogni entry di un Dataset viene raggruppata in questi insiemi ed automaticamente viene eseguito il merge tra i valori comuni, in base a come si vuole creare questo insieme. Eseguire le query in Pig quindi diventa molto semplice, in quanto basta una creazione consona di bag per gestire i dati più facilmente ed applicare filtri opportuni.  La sintassi è molto simile a quella di SQL, in modo che i progettisti e gestori di Database potessero imparare facilmente questo linguaggio. Pig ha una gestione dell'HDFS in maniera trasparente, quindi si può liberamente leggere e scrivere al suo interno preoccupandosi solo del path, il resto è gestito dal sistema. Contrariamente a quanto si possa pensare, pur essendo un linguaggio di scripting, la query risultante ha tempi di esecuzione molto alti, molto prossimi a quelli di Java MapReduce se non più veloce in alcuni casi.
+\begin{figure}[!ht]
+  \caption{Architettura di Pig.}
+  \centering
+    \includegraphics[scale=0.6]{pig_architecture.jpg}
+\end{figure}
+
+
+ \`E una piattaforma ad alto livello di MapReduce, ovvero il progettista deve solo preoccuparsi di creare correttamente la query nel linguaggio di Pig, mentre Pig gestisce tutta la parte di MapReduce (quindi tutto il comportamento dei Mapper e dei Reducer). Il sistema lavora con un oggetto particolare chiamato ``bag'', che consiste in un insieme di valori di un certo tipo; solitamente ogni entry di un Dataset viene raggruppata in questi insiemi ed automaticamente viene eseguito il merge tra i valori comuni, in base a come si vuole creare questo insieme. Eseguire le query in Pig quindi diventa molto semplice, in quanto basta una creazione consona di bag per gestire i dati più facilmente ed applicare filtri opportuni.  La sintassi è molto simile a quella di SQL, in modo che i progettisti e gestori di Database potessero imparare facilmente questo linguaggio. Pig ha una gestione dell'HDFS in maniera trasparente, quindi si può liberamente leggere e scrivere al suo interno preoccupandosi solo del path, il resto è gestito dal sistema. Contrariamente a quanto si possa pensare, pur essendo un linguaggio di scripting, la query risultante ha tempi di esecuzione molto bassi, molto prossimi a quelli di Java MapReduce se non più veloce in alcuni casi.
  
  Per questo progetto è stato utilizzato il sistema Pig senza estensioni di altri linguaggi, con l'utilizzo di definizioni di funzioni custom per alcune query. Essendo state scelte le query per essere implementabili in Pig, non sono stati utilizzati ulteriori ausili al di fuori del sistema Pig, poiché con il sistema di tipi di bag si riusciva a rappresentare in maniera sempre efficiente ogni query.
 
@@ -189,7 +202,9 @@ In generale, bisogna considerare tre campi del dataset: il campo ``month'', il c
 
 Questa query risulta semplice da implementare su Pig mentre risulta piuttosto complessa con Java MapReduce, in quanto sembrano essere tre query differenti, che in Pig possono essere eseguite con tre operazioni differenti, invece con Java MapReduce servirebbero tre job differenti. Si è quindi adottato uno stratagemma per quest'ultimo per evitare di eseguire tre job utilizzando più memoria globale durante l'esecuzione, rimanendo comunque in ambiente parallelo e mantenendo la scalabilità.
 
-In pseudocodice, la query potrebbe essere concepita in questo modo:
+In pseudocodice, la query potrebbe essere pensata in questo modo:
+
+
 
 \begin{algorithm}
 \caption{Query 1}\label{euclid}
@@ -223,7 +238,8 @@ In pseudocodice, la query potrebbe essere concepita in questo modo:
 
 In Pig il funzionamento della query è semplice: si carica in una variabile il file CSV tramite il comando LOAD, considerando come separatore la virgola (visto che il separatore dei campi dei file CSV è appunto la virgola), impostando le variabili e il relativo tipo in maniera ordinata rispetto alle colonne ``virtuali'' del file CSV. Fatto ciò, si crea un gruppo unificando tutte le entry secondo la variabile ``scode'' e ``dcode'', in modo che tutte le entry con scode e dcode uguali si uniscano e si incrementi il contatore di quelle entry tramite la funzione COUNT. Fatto ciò, si devono raggruppare i risultati in gruppi formati dal campo month e dcode oppure month e scode, in modo da poter contare, per ogni mese, i voli effettuati. Poi, per stampare i primi 20 voli più effettuati, si utilizza la funzione TOP che restituisce i primi 20 elementi di un gruppo, avendoli ordinati in base al count eseguiti precedentemente. Infine si stampa il risultato nell'HDFS tramite la funzione STORE. Per il traffico totale invece, si esegue il merge tra i risultati precedentemente ottenuti (salvati in variabili) tramite la costruzione di un insieme tramite l'operatore relazionale UNION, si esegue un raggruppamento per mese e codice volo e si esegue nuovamente la funzione TOP per poi salvare il risultato nell'HDFS tramite la funzione STORE.
 
-In pseudocodice, si potrebbe descrivere in questo modo (si può notare che è molto simile allo pseudocodice descritto precedentemente):
+In pseudocodice, si potrebbe implementare in questo modo (si può notare che è molto simile allo pseudocodice descritto precedentemente):
+
 
 \begin{algorithm}
 \caption{Query 1 Pig}\label{euclid}
@@ -332,7 +348,7 @@ In pseudocodice, si potrebbe descrivere in questo modo:
 
 Questa query consiste nel trovare la densità, in logaritmo base 10, dei voli totali di compagnie aeree per ogni mese. Sia su Java MapReduce sia su Pig è stato facile implementarla, in quanto è un semplice conto di chiavi/valori per poi stampare il valore di ogni chiave in base logaritmica.
 
-In pseudocodice, la query potrebbe essere concepita in questo modo:
+In pseudocodice, la query potrebbe essere implementata in questo modo:
 
 \begin{algorithm}
 \caption{Query 2}\label{euclid}
@@ -408,7 +424,7 @@ In pseudocodice, si può rappresentare l'algoritmo in questo modo:
 
 Questa query consiste nel trovare i voli che hanno un ritardo maggiore di 15 minuti; è necessario quindi implementare un semplice filtro che agisca sulla differenza tra il tempo di arrivo di un aereo e il tempo di arrivo registrato dello stesso (rispettivamente i campi ``ArrTime'' e ``CRSArrTime'') e il relativo ratio. Si è deciso di utilizzare la differenza di questi due campi e non direttamente il campo ``ArrDelay'' in quanto non è sempre valorizzato e quindi poteva portare a dei problemi di consistenza di dati aggiungendo calcolo maggiore, oltre al fatto che si potevano avere risultati sbagliati. Come granularità è stato deciso di utilizzare solo il mese.
 
-In pseudocodice, la query potrebbe essere concepita in questo modo:
+In pseudocodice, la query potrebbe essere implementata in questo modo:
 
 \begin{algorithm}
 \caption{Query 3}\label{euclid}
@@ -489,7 +505,7 @@ In pseudocodice, si può implementare l'algoritmo in questo modo:
 
 Questa query è molto simile alla query precedente, in quanto chiede di trovare i voli che hanno un ritardo maggiore di 15 minuti; però ha la variante di far vedere la differenza di ritardo anche tra diverse compagnie aeree. Quindi, si può utilizzare la struttura precedente togliendo il raggruppamento per giorni e sostituendolo con il raggruppamento per compagnie aeree, usando il campo del Dataset ``carrier''.  Come granularità è stato deciso di utilizzare solo il mese.
 
-In pseudocodice, la query potrebbe essere concepita in questo modo:
+In pseudocodice, la query potrebbe essere implementata in questo modo:
 
 \begin{algorithm}
 \caption{Query 4}\label{euclid}
@@ -570,7 +586,7 @@ In Java MapReduce, si può implementare l'algoritmo in questo modo:
 
 Questa query chiede di trovare quale rotta viene scelta più frequentemente; esistono due diversi approcci per implementare questa query, ovvero il metodo ``semplice'', cioè di contare ogni gruppi di volo ed ordinarli in base al numero di volte che sono stati presi, oppure il metodo più ``complesso'' che consisteva nel bilanciare il carico di lavoro in modo da distribuire più facilemente il lavoro. \'E stato scelto di implementare il metodo semplice in quanto per l'altro metodo era necessario per Pig utilizzare un programma esterno che potesse bilanciare il carico; i creatori dell'esercizio suggerivano una soluzione con un programma Java da importare in quanto Pig da solo non riuscirebbe a fare il bilanciamento, però non è sembrato opportuno ai fini del progetto in quanto si devono misurare le performance di Pig e Java MapReduce, non le varianti con Pig unito a Java MapReduce.
 
-In pseudocodice, la query potrebbe essere concepita in questo modo:
+In pseudocodice, la query potrebbe essere implementata in questo modo:
 
 \begin{algorithm}
 \caption{Query 5}\label{euclid}
@@ -641,44 +657,47 @@ In Java MapReduce, si può implementare l'algoritmo in questo modo:
 
 \section{Confronto tra tempi}
 
-\subsection{Query 1}
-Pig: 4 minuti	 Started at: Fri Jun 03 14:54:54 PDT 2016	 Finished at: Fri Jun 03 14:58:34 PDT 2016
+Le query implementate hanno tempo di esecuzione mediamente simili tra i diversi sistemi utilizzati, anche se Java MapReduce a volte risulta essere più veloce di Pig; questo perché Java risulta essere più ottimizzato (si ha più controllo sulle operazioni). Si riporteranno di seguito i tempi di esecuzione e le relative tabelle di log visibili sull'interfaccia di controllo di Hadoop.
 
-Java: 4 minuti	 Started at: Fri Jun 03 15:05:58 PDT 2016	 Finished at: Fri Jun 03 15:09:14 PDT 2016
+\subsection{Query 1}
+
+Pig: 4 minuti	 (14:54:54 - 14:58:34 )
+
+Java: 4 minuti	 (15:05:58 - 15:09:14 )
 
 \includegraphics[scale=0.8]{pig1.png}
 \includegraphics[scale=0.8]{java1.png}
 
 \subsection{Query 2}
-Pig: 3 minuti	 Started at: Fri Jun 03 15:18:35 PDT 2016	 Finished at: Fri Jun 03 15:21:07 PDT 2016
+Pig: 3 minuti	 (15:18:35 -  15:21:07 )
 
-Java: 2 minuti	 Started at: Fri Jun 03 15:33:06 PDT 2016	 Finished at: Fri Jun 03 15:35:14 PDT 2016
+Java: 2 minuti	 15:33:06 - 15:35:14 )
 
 \includegraphics[scale=0.8]{pig2.png}
 \includegraphics[scale=0.8]{java2.png}
 
 \subsection{Query 3}
-Pig: 2 minuti	 Started at: Fri Jun 03 15:38:38 PDT 2016	 Finished at: Fri Jun 03 15:40:41 PDT 2016
+Pig: 2 minuti	 (15:38:38 - 15:40:41)
 
-Java: 2 minuti	 Started at: Fri Jun 03 15:44:27 PDT 2016	 Finished at: Fri Jun 03 15:46:46 PDT 2016
+Java: 2 minuti	(15:44:27 - 15:46:46)
 
 \includegraphics[scale=0.8]{pig3.png}
 
 \includegraphics[scale=0.8]{java3.png}
 
 \subsection{Query 4}
-Pig: 2 minuti	 Started at: Sat Jun 04 08:27:58 PDT 2016	 Finished at: Sat Jun 04 08:30:05 PDT 2016
+Pig: 2 minuti	 (08:27:58 - 08:30:05)
 
-Java: 2 minuti	 Started at: Sat Jun 04 08:32:29 PDT 2016	 Finished at: Sat Jun 04 08:35:14 PDT 2016
+Java: 2 minuti	 (08:32:29 - 04 08:35:14)
 
 \includegraphics[scale=0.8]{pig4.png}
 
 \includegraphics[scale=0.8]{java4.png}
 
 \subsection{Query 5}
-Pig:  2 minuti	Started at: Sat Jun 04 08:41:52 PDT 2016	 Finished at: Sat Jun 04 08:44:08 PDT 2016
+Pig:  2 minuti	(08:41:52 - 08:44:08)
 
-Java: 3 minuti	Started at: Sat Jun 04 08:53:57 PDT 2016	 Finished at: Sat Jun 04 08:56:57 PDT 2016
+Java: 3 minuti	(08:53:57 - 08:56:57 )
 
 \includegraphics[scale=0.8]{pig5.png}
 \includegraphics[scale=0.8]{java5.png}

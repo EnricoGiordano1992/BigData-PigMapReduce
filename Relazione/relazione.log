@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  4 JUN 2016 18:46
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.11.8)  10 JUN 2016 14:57
 entering extended mode
 **relazione.tex
 
@@ -997,191 +997,215 @@ been already used, duplicate ignored
                    \relax 
 l.112 \item    M
                 onth,  il mese del volo aereo, i valori sono compresi tra 1 ...
-[1] [2] [3] [4] [5]
+[1] [2] <hadoop_mapreduce.png, id=90, 723.70375pt x 626.34pt>
+File: hadoop_mapreduce.png Graphic file (type png)
+
+<use hadoop_mapreduce.png>
+Package pdftex.def Info: hadoop_mapreduce.png used on input line 148.
+(pdftex.def)             Requested size: 434.2256pt x 375.80688pt.
+
+Overfull \hbox (15.97192pt too wide) in paragraph at lines 148--149
+ [][] 
+ []
+
+[3 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/hadoop_
+mapreduce.png>] [4] <pig_architecture.jpg, id=102, 712.52113pt x 385.7793pt>
+File: pig_architecture.jpg Graphic file (type jpg)
+
+<use pig_architecture.jpg>
+Package pdftex.def Info: pig_architecture.jpg used on input line 185.
+(pdftex.def)             Requested size: 427.51598pt x 231.46936pt.
+
+Overfull \hbox (9.2623pt too wide) in paragraph at lines 185--186
+ [][] 
+ []
+
+[5] [6 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/pig
+_architecture.jpg>]
 Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
-put line 195.
-LaTeX Font Info:    Try loading font information for U+msa on input line 197.
+put line 210.
+LaTeX Font Info:    Try loading font information for U+msa on input line 212.
 
 ("C:\Program Files (x86)\MiKTeX 2.9\tex\latex\amsfonts\umsa.fd"
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 197.
+LaTeX Font Info:    Try loading font information for U+msb on input line 212.
 
 ("C:\Program Files (x86)\MiKTeX 2.9\tex\latex\amsfonts\umsb.fd"
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-Overfull \hbox (7.3097pt too wide) in paragraph at lines 202--203
+Overfull \hbox (7.3097pt too wide) in paragraph at lines 217--218
 []$\OML/cmm/m/it/10.95 resultInboundFlights \OMS/cmsy/m/n/10.95   []\OML/cmm/m/
 it/10.95 inboundFlights[]$ 
  []
 
 
-Overfull \hbox (26.65997pt too wide) in paragraph at lines 210--211
+Overfull \hbox (26.65997pt too wide) in paragraph at lines 225--226
 []$\OML/cmm/m/it/10.95 resultOutboundFlights \OMS/cmsy/m/n/10.95   []\OML/cmm/m
 /it/10.95 outboundFlights[]$ 
  []
 
-
-Overfull \hbox (7.3097pt too wide) in paragraph at lines 238--239
+[7]
+Overfull \hbox (7.3097pt too wide) in paragraph at lines 254--255
 []$\OML/cmm/m/it/10.95 resultInboundFlights \OMS/cmsy/m/n/10.95   []\OML/cmm/m/
 it/10.95 inboundFlights[]$ 
  []
 
 
-Overfull \hbox (26.65997pt too wide) in paragraph at lines 249--250
+Overfull \hbox (26.65997pt too wide) in paragraph at lines 265--266
 []$\OML/cmm/m/it/10.95 resultOutboundFlights \OMS/cmsy/m/n/10.95   []\OML/cmm/m
 /it/10.95 outboundFlights[]$ 
  []
 
-[6] [7] [8] [9] [10] [11]
-Underfull \hbox (badness 10000) in paragraph at lines 436--437
+[8] [9] [10] [11] [12]
+Underfull \hbox (badness 10000) in paragraph at lines 452--453
 []$\OML/cmm/m/it/10.95 AllFlights \OMS/cmsy/m/n/10.95   []\OT1/cmr/m/n/10.95 (\
 OML/cmm/m/it/10.95 data:DayOfMonth; data:DayOfWeek; data:ArrTime \OMS/cmsy/m/n/
 10.95  $
  []
 
-[12]
-Overfull \hbox (1.9038pt too wide) in paragraph at lines 462--463
+[13]
+Overfull \hbox (1.9038pt too wide) in paragraph at lines 478--479
 [] $\OML/cmm/m/it/10.95 carrierCompositeKey \OMS/cmsy/m/n/10.95   \OML/cmm/m/it
 /10.95 entry\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 Month; DayOfMonth; DayOfWee
 k; ArrTime \OMS/cmsy/m/n/10.95  $
  []
 
-[13] [14] [15] [16] <pig1.png, id=171, 532.23843pt x 603.0028pt>
+[14] [15] [16] [17] <pig1.png, id=181, 532.23843pt x 603.0028pt>
 File: pig1.png Graphic file (type png)
 
 <use pig1.png>
-Package pdftex.def Info: pig1.png used on input line 649.
+Package pdftex.def Info: pig1.png used on input line 668.
 (pdftex.def)             Requested size: 425.79132pt x 482.4029pt.
- <java1.png, id=173, 527.72156pt x 589.4522pt>
+ <java1.png, id=182, 527.72156pt x 589.4522pt>
 File: java1.png Graphic file (type png)
  <use java1.png>
-Package pdftex.def Info: java1.png used on input line 650.
+Package pdftex.def Info: java1.png used on input line 669.
 (pdftex.def)             Requested size: 422.17783pt x 471.5624pt.
 
-Overfull \hbox (24.53764pt too wide) in paragraph at lines 649--651
+Overfull \hbox (24.53764pt too wide) in paragraph at lines 668--670
 [][]
  []
 
 
-Overfull \hbox (3.92415pt too wide) in paragraph at lines 649--651
+Overfull \hbox (3.92415pt too wide) in paragraph at lines 668--670
 [] 
  []
 
-[17 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/pig1.p
-ng>] <pig2.png, id=179, 532.23843pt x 603.0028pt>
+[18] [19 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/p
+ig1.png>] <pig2.png, id=193, 532.23843pt x 603.0028pt>
 File: pig2.png Graphic file (type png)
  <use pig2.png>
-Package pdftex.def Info: pig2.png used on input line 657.
+Package pdftex.def Info: pig2.png used on input line 676.
 (pdftex.def)             Requested size: 425.79132pt x 482.4029pt.
 
-<java2.png, id=180, 528.47438pt x 587.19376pt>
+<java2.png, id=194, 528.47438pt x 587.19376pt>
 File: java2.png Graphic file (type png)
  <use java2.png>
-Package pdftex.def Info: java2.png used on input line 658.
+Package pdftex.def Info: java2.png used on input line 677.
 (pdftex.def)             Requested size: 422.78008pt x 469.75565pt.
 
-Overfull \hbox (24.53764pt too wide) in paragraph at lines 657--659
+Overfull \hbox (24.53764pt too wide) in paragraph at lines 676--678
 [][]
  []
 
 
-Overfull \hbox (4.5264pt too wide) in paragraph at lines 657--659
+Overfull \hbox (4.5264pt too wide) in paragraph at lines 676--678
 [] 
  []
 
-[18 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/java1.
-png>] [19 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/
-pig2.png>] <pig3.png, id=192, 535.2497pt x 605.26125pt>
+[20 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/java1.
+png>] [21 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/
+pig2.png>] <pig3.png, id=205, 535.2497pt x 605.26125pt>
 File: pig3.png Graphic file (type png)
  <use pig3.png>
-Package pdftex.def Info: pig3.png used on input line 665.
+Package pdftex.def Info: pig3.png used on input line 684.
 (pdftex.def)             Requested size: 428.20033pt x 484.20964pt.
 
-Overfull \hbox (26.94666pt too wide) in paragraph at lines 665--666
+Overfull \hbox (26.94666pt too wide) in paragraph at lines 684--685
 [][] 
  []
 
-[20 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/java2.
-png>] <java3.png, id=198, 527.72156pt x 587.94656pt>
+[22 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/java2.
+png>] <java3.png, id=211, 527.72156pt x 587.94656pt>
 File: java3.png Graphic file (type png)
  <use java3.png>
-Package pdftex.def Info: java3.png used on input line 667.
+Package pdftex.def Info: java3.png used on input line 686.
 (pdftex.def)             Requested size: 422.17783pt x 470.3579pt.
 
-Overfull \hbox (20.92415pt too wide) in paragraph at lines 667--668
+Overfull \hbox (20.92415pt too wide) in paragraph at lines 686--687
 [][] 
  []
 
-[21 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/pig3.p
-ng>] <pig4.png, id=204, 535.2497pt x 610.53094pt>
+[23 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/pig3.p
+ng>] <pig4.png, id=217, 535.2497pt x 610.53094pt>
 File: pig4.png Graphic file (type png)
  <use pig4.png>
-Package pdftex.def Info: pig4.png used on input line 674.
+Package pdftex.def Info: pig4.png used on input line 693.
 (pdftex.def)             Requested size: 428.20033pt x 488.42542pt.
 
-Overfull \hbox (26.94666pt too wide) in paragraph at lines 674--675
+Overfull \hbox (26.94666pt too wide) in paragraph at lines 693--694
 [][] 
  []
 
-[22 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/java3.
-png>] <java4.png, id=210, 528.47438pt x 587.19376pt>
+[24 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/java3.
+png>] <java4.png, id=224, 528.47438pt x 587.19376pt>
 File: java4.png Graphic file (type png)
  <use java4.png>
-Package pdftex.def Info: java4.png used on input line 676.
+Package pdftex.def Info: java4.png used on input line 695.
 (pdftex.def)             Requested size: 422.78008pt x 469.75565pt.
 
-Overfull \hbox (21.5264pt too wide) in paragraph at lines 676--677
+Overfull \hbox (21.5264pt too wide) in paragraph at lines 695--696
 [][] 
  []
 
-[23 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/pig4.p
-ng>] <pig5.png, id=216, 520.19344pt x 587.94656pt>
+[25 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/pig4.p
+ng>] <pig5.png, id=230, 520.19344pt x 587.94656pt>
 File: pig5.png Graphic file (type png)
  <use pig5.png>
-Package pdftex.def Info: pig5.png used on input line 683.
+Package pdftex.def Info: pig5.png used on input line 702.
 (pdftex.def)             Requested size: 416.1553pt x 470.3579pt.
 
-<java5.png, id=217, 526.21594pt x 586.44093pt>
+<java5.png, id=231, 526.21594pt x 586.44093pt>
 File: java5.png Graphic file (type png)
  <use java5.png>
-Package pdftex.def Info: java5.png used on input line 684.
+Package pdftex.def Info: java5.png used on input line 703.
 (pdftex.def)             Requested size: 420.97333pt x 469.15337pt.
 
-Overfull \hbox (14.90163pt too wide) in paragraph at lines 683--685
+Overfull \hbox (14.90163pt too wide) in paragraph at lines 702--704
 [][]
  []
 
 
-Overfull \hbox (2.71965pt too wide) in paragraph at lines 683--685
+Overfull \hbox (2.71965pt too wide) in paragraph at lines 702--704
 [] 
  []
 
-[24 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/java4.
-png>] [25 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/
-pig5.png>] [26 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relaz
-ione/java5.png>] [27]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 720.
- [28]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 720.
+[26 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/java4.
+png>] [27 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relazione/
+pig5.png>] [28 <C:/Users/enric_000/Documents/BIGDATA/BigData-PigMapReduce/Relaz
+ione/java5.png>] [29]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 739.
+ [30]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 739.
 
 (C:\Users\enric_000\Documents\BIGDATA\BigData-PigMapReduce\Relazione\relazione.
 aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 720.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 720.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 739.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 739.
 Package rerunfilecheck Info: File `relazione.out' has not changed.
 (rerunfilecheck)             Checksum: A17D663303E3FA1D1BE6342CE2D16CD4;941.
 
 
 LaTeX Warning: There were multiply-defined labels.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 720.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 739.
  ) 
 Here is how much of TeX's memory you used:
- 16077 strings out of 493921
- 263418 string characters out of 3144864
- 361202 words of memory out of 3000000
- 19074 multiletter control sequences out of 15000+200000
+ 16092 strings out of 493921
+ 263706 string characters out of 3144864
+ 356202 words of memory out of 3000000
+ 19082 multiletter control sequences out of 15000+200000
  12356 words of font info for 45 fonts, out of 3000000 for 9000
  841 hyphenation exceptions out of 8191
  44i,12n,75p,1606b,481s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -1196,9 +1220,9 @@ iles (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Program Fil
 es (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy8.pfb><C:/Program Files 
 (x86)/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Program Files (x
 86)/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on relazione.pdf (29 pages, 1086005 bytes).
+Output written on relazione.pdf (31 pages, 1238863 bytes).
 PDF statistics:
- 293 PDF objects out of 1000 (max. 8388607)
- 62 named destinations out of 1000 (max. 500000)
- 192 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 307 PDF objects out of 1000 (max. 8388607)
+ 66 named destinations out of 1000 (max. 500000)
+ 202 words of extra memory for PDF output out of 10000 (max. 10000000)
 
